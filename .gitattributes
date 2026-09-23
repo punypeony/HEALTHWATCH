@@ -1,0 +1,2 @@
+# Keep the reproducible generated dataset byte-identical on Windows checkouts.
+backend/ml/training_data.csv text eol=lf
