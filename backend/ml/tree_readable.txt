@@ -1,0 +1,73 @@
+|--- sugar_pct <= 0.999739
+|   |--- sugar_pct <= 0.801483
+|   |   |--- sodium_pct <= 0.798984
+|   |   |   |--- has_allergy_match <= 0.500000
+|   |   |   |   |--- calorie_pct <= 0.795199
+|   |   |   |   |   |--- class: safe
+|   |   |   |   |--- calorie_pct >  0.795199
+|   |   |   |   |   |--- class: danger
+|   |   |   |--- has_allergy_match >  0.500000
+|   |   |   |   |--- sodium_pct <= 0.113659
+|   |   |   |   |   |--- class: danger
+|   |   |   |   |--- sodium_pct >  0.113659
+|   |   |   |   |   |--- class: danger
+|   |   |--- sodium_pct >  0.798984
+|   |   |   |--- sodium_pct <= 0.999934
+|   |   |   |   |--- has_condition_conflict <= 0.500000
+|   |   |   |   |   |--- class: warning
+|   |   |   |   |--- has_condition_conflict >  0.500000
+|   |   |   |   |   |--- class: danger
+|   |   |   |--- sodium_pct >  0.999934
+|   |   |   |   |--- calorie_pct <= 0.049550
+|   |   |   |   |   |--- class: danger
+|   |   |   |   |--- calorie_pct >  0.049550
+|   |   |   |   |   |--- class: danger
+|   |--- sugar_pct >  0.801483
+|   |   |--- has_condition_conflict <= 0.500000
+|   |   |   |--- sodium_pct <= 0.998619
+|   |   |   |   |--- has_allergy_match <= 0.500000
+|   |   |   |   |   |--- class: warning
+|   |   |   |   |--- has_allergy_match >  0.500000
+|   |   |   |   |   |--- class: danger
+|   |   |   |--- sodium_pct >  0.998619
+|   |   |   |   |--- class: danger
+|   |   |--- has_condition_conflict >  0.500000
+|   |   |   |--- calorie_pct <= 0.388379
+|   |   |   |   |--- class: danger
+|   |   |   |--- calorie_pct >  0.388379
+|   |   |   |   |--- sugar_pct <= 0.814132
+|   |   |   |   |   |--- class: safe
+|   |   |   |   |--- sugar_pct >  0.814132
+|   |   |   |   |   |--- class: danger
+|--- sugar_pct >  0.999739
+|   |--- calorie_pct <= 0.230860
+|   |   |--- calorie_pct <= 0.230312
+|   |   |   |--- calorie_pct <= 0.073477
+|   |   |   |   |--- calorie_pct <= 0.070176
+|   |   |   |   |   |--- class: danger
+|   |   |   |   |--- calorie_pct >  0.070176
+|   |   |   |   |   |--- class: warning
+|   |   |   |--- calorie_pct >  0.073477
+|   |   |   |   |--- calorie_pct <= 0.143067
+|   |   |   |   |   |--- class: danger
+|   |   |   |   |--- calorie_pct >  0.143067
+|   |   |   |   |   |--- class: danger
+|   |   |--- calorie_pct >  0.230312
+|   |   |   |--- class: warning
+|   |--- calorie_pct >  0.230860
+|   |   |--- sodium_pct <= 0.100991
+|   |   |   |--- sodium_pct <= 0.099046
+|   |   |   |   |--- sugar_pct <= 1.264913
+|   |   |   |   |   |--- class: danger
+|   |   |   |   |--- sugar_pct >  1.264913
+|   |   |   |   |   |--- class: danger
+|   |   |   |--- sodium_pct >  0.099046
+|   |   |   |   |--- class: safe
+|   |   |--- sodium_pct >  0.100991
+|   |   |   |--- sugar_pct <= 1.010805
+|   |   |   |   |--- age_band_elderly <= 0.500000
+|   |   |   |   |   |--- class: danger
+|   |   |   |   |--- age_band_elderly >  0.500000
+|   |   |   |   |   |--- class: safe
+|   |   |   |--- sugar_pct >  1.010805
+|   |   |   |   |--- class: danger

@@ -1,0 +1,15 @@
+Accuracy: 92.90%
+Confusion matrix (rows=true, columns=predicted; safe, warning, danger):
+  577     5     8
+   20   105    10
+   19     9   247
+
+              precision    recall  f1-score   support
+
+        safe     0.9367    0.9780    0.9569       590
+     warning     0.8824    0.7778    0.8268       135
+      danger     0.9321    0.8982    0.9148       275
+
+    accuracy                         0.9290      1000
+   macro avg     0.9170    0.8846    0.8995      1000
+weighted avg     0.9281    0.9290    0.9277      1000

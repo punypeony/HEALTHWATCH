@@ -1,2 +1,5 @@
 # Keep the reproducible generated dataset byte-identical on Windows checkouts.
 backend/ml/training_data.csv text eol=lf
+backend/ml/*.json text eol=lf
+backend/ml/*.txt text eol=lf
+backend/ml/risk_model.pkl binary

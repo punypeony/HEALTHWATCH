@@ -6,7 +6,7 @@ import pytest
 
 from ml.generate_training_data import (
     COLUMNS, OUTPUT_PATH, RATIO_COLUMNS, generate_rows, print_class_balance,
-    rule_label, sample_ratio, write_dataset,
+    rule_label, sample_ratio, sample_calorie_ratio, write_dataset,
 )
 
 
@@ -91,3 +91,4 @@ def test_bad_balance_is_rejected_before_writing(tmp_path):
 def test_sampler_reproducibility():
     first, second = random.Random(42), random.Random(42)
     assert [sample_ratio(first) for _ in range(100)] == [sample_ratio(second) for _ in range(100)]
+    assert [sample_calorie_ratio(first) for _ in range(100)] == [sample_calorie_ratio(second) for _ in range(100)]

@@ -34,6 +34,19 @@ def sample_ratio(rng: random.Random) -> float:
     return round(value, 6)
 
 
+def sample_calorie_ratio(rng: random.Random) -> float:
+    """Per-100g calories usually contribute less than a full daily energy target.
+
+    Use 96% low-skew draws and 4% elevated draws, retaining calorie-only risk
+    cases. These are synthetic assumptions, not empirical nutrition estimates.
+    """
+    if rng.random() < 0.96:
+        value = 0.02 + 0.65 * rng.betavariate(2, 5)
+    else:
+        value = rng.triangular(0.65, 2.0, 0.90)
+    return round(value, 6)
+
+
 def rule_label(row: dict) -> str:
     """Apply the specified deterministic rules in priority order."""
     if row['has_allergy_match'] == 1:
@@ -55,7 +68,8 @@ def generate_rows(random_state: int = RANDOM_STATE, *, add_noise: bool = True) -
     rng = random.Random(random_state)
     rows = []
     for _ in range(SAMPLE_COUNT):
-        row = {column: sample_ratio(rng) for column in RATIO_COLUMNS}
+        row = dict(sodium_pct=sample_ratio(rng), sugar_pct=sample_ratio(rng),
+                   calorie_pct=sample_calorie_ratio(rng))
         row.update(
             has_allergy_match=int(rng.random() < 0.06),
             has_condition_conflict=int(rng.random() < 0.18),

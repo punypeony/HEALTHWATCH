@@ -1,0 +1,69 @@
+{
+  "dataset_sha256": "ac77ed6219d98bac96c50edb272c590a764a929ca49fbe0c61bf0e6c639c271d",
+  "python": "3.14.7",
+  "scikit_learn": "1.9.1",
+  "pandas": "3.0.6",
+  "joblib": "1.6.0",
+  "random_state": 42,
+  "train_samples": 4000,
+  "test_samples": 1000,
+  "max_depth": 5,
+  "class_weight": "balanced",
+  "accuracy": 0.929,
+  "labels": [
+    "safe",
+    "warning",
+    "danger"
+  ],
+  "confusion_matrix": [
+    [
+      577,
+      5,
+      8
+    ],
+    [
+      20,
+      105,
+      10
+    ],
+    [
+      19,
+      9,
+      247
+    ]
+  ],
+  "classification_report": {
+    "safe": {
+      "precision": 0.9366883116883117,
+      "recall": 0.9779661016949153,
+      "f1-score": 0.956882255389718,
+      "support": 590.0
+    },
+    "warning": {
+      "precision": 0.8823529411764706,
+      "recall": 0.7777777777777778,
+      "f1-score": 0.8267716535433071,
+      "support": 135.0
+    },
+    "danger": {
+      "precision": 0.9320754716981132,
+      "recall": 0.8981818181818182,
+      "f1-score": 0.9148148148148149,
+      "support": 275.0
+    },
+    "accuracy": 0.929,
+    "macro avg": {
+      "precision": 0.9170389081876319,
+      "recall": 0.8846418992181704,
+      "f1-score": 0.8994895745826134,
+      "support": 1000.0
+    },
+    "weighted avg": {
+      "precision": 0.9280845056719086,
+      "recall": 0.929,
+      "f1-score": 0.9277487779823541,
+      "support": 1000.0
+    }
+  },
+  "report_text": "              precision    recall  f1-score   support\n\n        safe     0.9367    0.9780    0.9569       590\n     warning     0.8824    0.7778    0.8268       135\n      danger     0.9321    0.8982    0.9148       275\n\n    accuracy                         0.9290      1000\n   macro avg     0.9170    0.8846    0.8995      1000\nweighted avg     0.9281    0.9290    0.9277      1000\n"
+}

@@ -1,0 +1,10 @@
+[
+  "sodium_pct",
+  "sugar_pct",
+  "calorie_pct",
+  "has_allergy_match",
+  "has_condition_conflict",
+  "age_band_child",
+  "age_band_adult",
+  "age_band_elderly"
+]
