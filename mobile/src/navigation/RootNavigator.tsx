@@ -1,16 +1,24 @@
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { ActivityIndicator, View } from "react-native";
 
-import { HealthCheckScreen } from "../screens/HealthCheckScreen";
-import { ScannerScreen } from "../screens/ScannerScreen";
-import type { RootStackParamList } from "../types";
-
-const Stack = createNativeStackNavigator<RootStackParamList>();
+import { useSession } from "../auth/SessionContext";
+import { placeholder } from "../theme/placeholder";
+import { AppNavigator } from "./AppNavigator";
+import { AuthNavigator } from "./AuthNavigator";
 
 export function RootNavigator() {
-  return (
-    <Stack.Navigator>
-      <Stack.Screen name="Health" component={HealthCheckScreen} />
-      <Stack.Screen name="Scanner" component={ScannerScreen} />
-    </Stack.Navigator>
-  );
+  const { status } = useSession();
+
+  if (status === "loading") {
+    return (
+      <View style={placeholder.centered}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (status === "authenticated") {
+    return <AppNavigator />;
+  }
+
+  return <AuthNavigator />;
 }

@@ -1,8 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 type ScreenStatusProps = {
   title: string;
   message: string;
+  loading?: boolean;
   actionLabel?: string;
   onAction?: () => void;
 };
@@ -10,12 +11,14 @@ type ScreenStatusProps = {
 export function ScreenStatus({
   title,
   message,
+  loading = false,
   actionLabel,
   onAction,
 }: ScreenStatusProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
+      {loading ? <ActivityIndicator /> : null}
       <Text style={styles.message}>{message}</Text>
       {actionLabel && onAction ? (
         <Pressable onPress={onAction} style={styles.button}>

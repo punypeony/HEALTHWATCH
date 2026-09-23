@@ -121,7 +121,7 @@ From `mobile`:
 npx expo start
 ```
 
-The Health screen calls `GET /health`. Override the API URL when needed:
+The app opens on Log in. Register creates an account and returns to Log in. A stored session skips Log in until Log out. Override the API URL when needed:
 
 ```powershell
 # Physical device on the same Wi-Fi: replace with your computer's LAN IPv4 address.

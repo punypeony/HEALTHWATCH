@@ -1,19 +1,14 @@
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { ScreenStatus } from "../components/ScreenStatus";
 import { useHealthCheck } from "../hooks/useHealthCheck";
-import type { RootStackParamList } from "../types";
 import { getApiBaseUrl } from "../utils/apiBaseUrl";
 
 export function HealthCheckScreen() {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const health = useHealthCheck();
 
   if (health.status === "loading") {
-    return <ScreenStatus title="Backend health" message="Checking /health..." />;
+    return <ScreenStatus title="Backend health" message="Checking /health..." loading />;
   }
 
   if (health.status === "error") {
@@ -34,9 +29,6 @@ export function HealthCheckScreen() {
       <Text>status: {health.data.status}</Text>
       <Pressable onPress={health.retry} style={styles.button}>
         <Text>Check again</Text>
-      </Pressable>
-      <Pressable onPress={() => navigation.navigate("Scanner")} style={styles.button}>
-        <Text>Open scanner</Text>
       </Pressable>
     </View>
   );

@@ -1,4 +1,4 @@
-# AGENTS.md
+# [AGENTS.md](http://AGENTS.md)
 
 # FOOD CONSUMPTION HEALTH MONITORING SYSTEM
 
@@ -14,33 +14,33 @@ The system allows a caregiver to manage dependent relatives. Each dependent has 
 
 ## Mobile
 
-* Expo
-* React Native
-* TypeScript
-* React Navigation
-* Expo camera/barcode functionality
+- Expo
+- React Native
+- TypeScript
+- React Navigation
+- Expo camera/barcode functionality
 
 ## Backend
 
-* Python
-* FastAPI
-* SQLAlchemy
-* PostgreSQL
-* psycopg[binary]
-* Pydantic
-* httpx
-* python-dotenv
+- Python
+- FastAPI
+- SQLAlchemy
+- PostgreSQL
+- psycopg[binary]
+- Pydantic
+- httpx
+- python-dotenv
 
 ## Machine Learning
 
-* scikit-learn
-* pandas
-* joblib
-* Decision Tree Classifier
+- scikit-learn
+- pandas
+- joblib
+- Decision Tree Classifier
 
 ## Testing
 
-* pytest
+- pytest
 
 ## External Food Data
 
@@ -62,17 +62,17 @@ Database must be PostgreSQL through SQLAlchemy.
 
 Do NOT use:
 
-* MongoDB
-* Supabase
-* Firebase
-* MySQL
-* SQLite as the application database
-* Redis
-* an LLM API
-* OpenAI API
-* Gemini API
-* remote AI inference APIs
-* another ML platform
+- MongoDB
+- Supabase
+- Firebase
+- MySQL
+- SQLite as the application database
+- Redis
+- an LLM API
+- OpenAI API
+- Gemini API
+- remote AI inference APIs
+- another ML platform
 
 The risk classifier is a locally trained scikit-learn Decision Tree loaded with joblib.
 
@@ -90,28 +90,28 @@ Prefer simple implementations that every team member can explain.
 
 This is a one-week Software Engineering course project.
 
-Do not add features that are not required.
+Do not add features that are not required.*
 
 Do NOT add:
 
-* AI chatbots
-* LLM features
-* nutrition coaching
-* social features
-* payment systems
-* push notifications
-* wearable integrations
-* background tracking
-* maps
-* recommendation engines
-* complicated analytics
-* admin dashboards
-* microservices
-* Kubernetes
-* Redis
-* Celery
-* unnecessary state-management libraries
-* unnecessary UI component libraries
+- AI chatbots
+- LLM features
+- nutrition coaching
+- social features
+- payment systems
+- push notifications
+- wearable integrations
+- background tracking
+- maps
+- recommendation engines
+- complicated analytics
+- admin dashboards
+- microservices
+- Kubernetes
+- Redis
+- Celery
+- unnecessary state-management libraries
+- unnecessary UI component libraries
 
 If a feature is not in the requirements, do not add it just because it seems useful.
 
@@ -263,37 +263,37 @@ summaries
 
 ## users
 
-* id
-* name
-* email
-* password_hash
-* created_at
+- id
+- name
+- email
+- password_hash
+- created_at
 
 Email must be unique.
 
 ## dependents
 
-* id
-* caregiver_id
-* name
-* age
-* height_cm
-* weight_kg
-* sex
-* created_at
-* updated_at
+- id
+- caregiver_id
+- name
+- age
+- height_cm
+- weight_kg
+- sex
+- created_at
+- updated_at
 
 ## dietary_profiles
 
-* id
-* dependent_id
-* allergies
-* conditions
-* daily_sodium_mg
-* daily_sugar_g
-* daily_calories
-* created_at
-* updated_at
+- id
+- dependent_id
+- allergies
+- conditions
+- daily_sodium_mg
+- daily_sugar_g
+- daily_calories
+- created_at
+- updated_at
 
 A dependent has exactly one current dietary profile.
 
@@ -303,25 +303,25 @@ They are never entered manually by the caregiver.
 
 ## scanned_products
 
-* id
-* barcode
-* name
-* calories
-* sodium_mg
-* sugar_g
-* raw_response
-* fetched_at
+- id
+- barcode
+- name
+- calories
+- sodium_mg
+- sugar_g
+- raw_response
+- fetched_at
 
 Use JSONB for raw_response.
 
 ## meal_logs
 
-* id
-* dependent_id
-* scanned_product_id
-* risk_label
-* risk_reasons
-* created_at
+- id
+- dependent_id
+- scanned_product_id
+- risk_label
+- risk_reasons
+- created_at
 
 Risk labels:
 
@@ -333,12 +333,12 @@ danger
 
 ## alerts
 
-* id
-* dependent_id
-* meal_log_id
-* message
-* status
-* created_at
+- id
+- dependent_id
+- meal_log_id
+- message
+- status
+- created_at
 
 Statuses:
 
@@ -349,18 +349,18 @@ acknowledged
 
 ## summaries
 
-* id
-* dependent_id
-* week_start
-* text
-* created_at
+- id
+- dependent_id
+- week_start
+- text
+- created_at
 
 Use:
 
-* timestamptz
-* numeric
-* jsonb
-* PostgreSQL text arrays
+- timestamptz
+- numeric
+- jsonb
+- PostgreSQL text arrays
 
 where appropriate.
 
@@ -578,10 +578,10 @@ sklearn.tree.DecisionTreeClassifier
 
 The model must be:
 
-* trained locally
-* reproducible
-* committed to the repository
-* loaded locally by FastAPI
+- trained locally
+- reproducible
+- committed to the repository
+- loaded locally by FastAPI
 
 Required committed artifacts:
 
@@ -646,12 +646,12 @@ The generator must use random_state=42.
 
 The training dataset must contain meaningful examples across:
 
-* sodium levels
-* sugar levels
-* calorie levels
-* allergy matches
-* condition conflicts
-* child/adult/elderly groups
+- sodium levels
+- sugar levels
+- calorie levels
+- allergy matches
+- condition conflicts
+- child/adult/elderly groups
 
 No class should be below 10%.
 
@@ -717,20 +717,20 @@ Trivial framework declarations and model definitions do not require individual u
 
 Test:
 
-* authentication
-* validation
-* ownership
-* target computation
-* food lookup
-* caching
-* scan transaction
-* allergy matching
-* condition conflicts
-* model prediction
-* meal logs
-* alerts
-* weekly summaries
-* failure paths
+- authentication
+- validation
+- ownership
+- target computation
+- food lookup
+- caching
+- scan transaction
+- allergy matching
+- condition conflicts
+- model prediction
+- meal logs
+- alerts
+- weekly summaries
+- failure paths
 
 Do not delete tests to make the suite pass.
 
@@ -769,9 +769,9 @@ Keep state management simple.
 
 Prefer:
 
-* React state
-* React hooks
-* Context only when genuinely needed
+- React state
+- React hooks
+- Context only when genuinely needed
 
 Do not add Redux, Zustand, MobX, or another state-management library without approval.
 
@@ -783,15 +783,15 @@ The final UI/UX design has NOT been finalized.
 
 Until the final UI prompt is provided:
 
-* use simple placeholder styling
-* prioritize functionality
-* prioritize navigation
-* prioritize API integration
-* prioritize forms
-* prioritize scanner functionality
-* prioritize loading/error/empty states
-* do not create a custom visual design system
-* do not spend significant time on visual polish
+- use simple placeholder styling
+- prioritize functionality
+- prioritize navigation
+- prioritize API integration
+- prioritize forms
+- prioritize scanner functionality
+- prioritize loading/error/empty states
+- do not create a custom visual design system
+- do not spend significant time on visual polish
 
 Keep components structured so they can be restyled later.
 
@@ -834,12 +834,12 @@ Summary
 
 The scanner must:
 
-* request camera permission
-* detect a barcode
-* prevent duplicate rapid scans
-* show loading state
-* call the backend
-* display the actual backend result
+- request camera permission
+- detect a barcode
+- prevent duplicate rapid scans
+- show loading state
+- call the backend
+- display the actual backend result
 
 Provide manual barcode entry as a fallback.
 
@@ -882,11 +882,11 @@ Successful scan responses should follow this structure:
 
 Every API-driven screen must have appropriate:
 
-* loading state
-* success state
-* empty state
-* error state
-* retry action
+- loading state
+- success state
+- empty state
+- error state
+- retry action
 
 Do not leave blank screens when an API request fails.
 
@@ -900,11 +900,11 @@ Do NOT use an LLM.
 
 Calculate:
 
-* total scans
-* safe count
-* warning count
-* danger count
-* common alert reasons
+- total scans
+- safe count
+- warning count
+- danger count
+- common alert reasons
 
 Generate a short template-based summary.
 
@@ -924,18 +924,18 @@ Do not document features that do not exist.
 
 Required documentation includes:
 
-* use case diagram
-* activity diagram
-* scan sequence diagram
-* ER diagram
-* deployment diagram
-* ML evaluation
-* Decision Tree
-* functional requirements
-* non-functional requirements
-* code-file mapping
-* defect log
-* demo script
+- use case diagram
+- activity diagram
+- scan sequence diagram
+- ER diagram
+- deployment diagram
+- ML evaluation
+- Decision Tree
+- functional requirements
+- non-functional requirements
+- code-file mapping
+- defect log
+- demo script
 
 Use Mermaid for diagrams where practical.
 
@@ -953,12 +953,12 @@ If requirements conflict:
 
 Do not silently substitute:
 
-* databases
-* ML models
-* APIs
-* authentication systems
-* frameworks
-* architecture
+- databases
+- ML models
+- APIs
+- authentication systems
+- frameworks
+- architecture
 
 Do not claim a feature is complete unless its acceptance criteria are satisfied.
 
@@ -970,9 +970,9 @@ Do not add dependencies without asking first.
 
 Before adding a dependency, determine whether the feature can be implemented using:
 
-* the standard library
-* an already-installed dependency
-* existing Expo/React Native functionality
+- the standard library
+- an already-installed dependency
+- existing Expo/React Native functionality
 
 Only add a new dependency when necessary and approved.
 
@@ -982,49 +982,49 @@ Only add a new dependency when necessary and approved.
 
 ## Backend
 
-* FastAPI starts
-* PostgreSQL starts through Docker
-* `/health` checks database connectivity
-* authentication works
-* caregiver ownership is enforced
-* dependents can be created/updated/deleted
-* targets are automatically calculated
-* Open Food Facts lookup works
-* DEMO_MODE works offline
-* Decision Tree loads
-* scan transaction works
-* meal logs are stored
-* alerts are stored
-* weekly summaries work
-* API errors use the standard format
+- FastAPI starts
+- PostgreSQL starts through Docker
+- `/health` checks database connectivity
+- authentication works
+- caregiver ownership is enforced
+- dependents can be created/updated/deleted
+- targets are automatically calculated
+- Open Food Facts lookup works
+- DEMO_MODE works offline
+- Decision Tree loads
+- scan transaction works
+- meal logs are stored
+- alerts are stored
+- weekly summaries work
+- API errors use the standard format
 
 ## Machine Learning
 
-* training data committed
-* training script committed
-* model committed
-* feature order committed
-* readable tree committed
-* evaluation script committed
-* evaluation report generated
-* accuracy >= 90%
-* training reproducible
+- training data committed
+- training script committed
+- model committed
+- feature order committed
+- readable tree committed
+- evaluation script committed
+- evaluation report generated
+- accuracy >= 90%
+- training reproducible
 
 ## Mobile
 
-* register works
-* login works
-* dependents list works
-* add/edit dependent works
-* dependent navigation works
-* barcode scanning works
-* manual barcode entry works
-* scan result works
-* history works
-* alerts work
-* alert acknowledgement works
-* weekly summary works
-* loading/error/empty states work
+- register works
+- login works
+- dependents list works
+- add/edit dependent works
+- dependent navigation works
+- barcode scanning works
+- manual barcode entry works
+- scan result works
+- history works
+- alerts work
+- alert acknowledgement works
+- weekly summary works
+- loading/error/empty states work
 
 ## Testing
 
@@ -1042,8 +1042,8 @@ npx tsc --noEmit
 
 The final project must have:
 
-* zero failing backend tests
-* zero TypeScript errors
+- zero failing backend tests
+- zero TypeScript errors
 
 ## Demo
 
@@ -1072,23 +1072,23 @@ Until that prompt is provided, do not treat placeholder UI as the final design.
 
 When the final UI prompt is provided, its visual reference becomes the source of truth for:
 
-* colors
-* typography
-* spacing
-* layout
-* components
-* navigation appearance
-* icons
-* cards
-* buttons
-* scanner screen
-* result screen
-* history
-* alerts
-* summary
-* loading states
-* error states
-* empty states
+- colors
+- typography
+- spacing
+- layout
+- components
+- navigation appearance
+- icons
+- cards
+- buttons
+- scanner screen
+- result screen
+- history
+- alerts
+- summary
+- loading states
+- error states
+- empty states
 
 The final UI redesign must preserve all existing backend and mobile functionality.
 
