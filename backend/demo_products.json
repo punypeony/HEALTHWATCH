@@ -1,0 +1,5 @@
+{
+  "2000000000015": {"status": 1, "product": {"product_name": "Demo Plain Oats", "allergens_tags": [], "nutriments": {"energy-kcal_100g": 100, "sodium_100g": 0.05, "sugars_100g": 2}}},
+  "2000000000022": {"status": 1, "product": {"product_name": "Demo Sweet Snack", "allergens_tags": [], "nutriments": {"energy-kcal_100g": 250, "sodium_100g": 0.1, "sugars_100g": 40}}},
+  "2000000000039": {"status": 1, "product": {"product_name": "Demo Salty Crackers", "allergens_tags": ["en:milk"], "nutriments": {"energy-kcal_100g": 300, "sodium_100g": 2.2, "sugars_100g": 5}}}
+}
