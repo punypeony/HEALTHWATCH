@@ -9,3 +9,4 @@ joblib
 pytest
 python-dotenv
 httpx
+PyJWT>=2.10,<3

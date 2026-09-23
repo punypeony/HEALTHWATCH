@@ -6,6 +6,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -15,6 +16,18 @@ DATABASE_URL = os.getenv(
 )
 
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+SessionLocal = sessionmaker(bind=engine)
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+def create_tables() -> None:
+    """Create missing development tables; does not migrate existing tables."""
+    from app import models  # noqa: F401 -- register metadata and profile hook
+
+    Base.metadata.create_all(engine)
 
 
 def check_database_connection() -> bool:

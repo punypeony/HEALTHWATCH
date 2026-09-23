@@ -2,6 +2,10 @@
 
 Caregiver-facing Expo app and FastAPI backend for monitoring food consumption of dependent relatives. This repository currently contains the initial project scaffold.
 
+The backend now includes authentication and caregiver-owned dependent management.
+See [API usage and PowerShell login example](docs/api.md) for endpoint contracts,
+JWT setup, ownership rules, and errors. Food scanning remains a 501 placeholder.
+
 ## 1. Start PostgreSQL
 
 From the repository root:
@@ -16,6 +20,18 @@ PostgreSQL 16 listens on `localhost:5432`. Databases:
 - `food_monitor_test`
 
 Username and password: `postgres` / `postgres`.
+
+If PowerShell cannot find `docker` after installing Docker Desktop, open a new
+terminal. For a per-user installation, this session-only PATH update also works:
+
+```powershell
+$env:Path += ";$env:LOCALAPPDATA\Programs\DockerDesktop\resources\bin"
+docker compose up -d
+docker compose ps
+```
+
+The test database is created on the volume's first initialization. `docker compose
+down` preserves the databases in the persistent volume.
 
 ## 2. Create the Python virtual environment
 
@@ -51,6 +67,18 @@ With the virtual environment activated:
 ```bash
 pip install -r requirements.txt
 ```
+
+Create the PostgreSQL tables and demo records from `backend`:
+
+```bash
+python init_db.py
+python seed.py
+```
+
+Both commands can be repeated. The seed uses the shared backend target calculation
+and stores a salted password hash. See [database documentation](docs/database.md)
+for demo credentials, the ER diagram, constraints, and calculation assumptions.
+Table creation does not migrate existing tables.
 
 ## 4. Start FastAPI
 
@@ -91,12 +119,18 @@ npx expo start
 
 The Health screen calls `GET /health`. Override the API URL when needed:
 
-```bash
-# Physical device on the same network
+```powershell
+# Physical device on the same Wi-Fi: replace with your computer's LAN IPv4 address.
+$env:EXPO_PUBLIC_API_URL = "http://192.168.1.10:8000"
 npx expo start
 ```
 
-Then set `EXPO_PUBLIC_API_URL` (for example `http://192.168.1.10:8000`) before starting Expo. Android emulators use `http://10.0.2.2:8000` by default. iOS Simulator and Expo web use `http://127.0.0.1:8000`.
+Set the variable before starting Expo, then open the QR code in a compatible Expo
+Go app. Keep FastAPI running and allow port 8000 through the Windows firewall on
+your private network if prompted. Android emulators use `http://10.0.2.2:8000` by
+default; iOS Simulator uses `http://127.0.0.1:8000`. Web dependencies are not included
+in this native scaffold. The scanner currently displays raw barcodes only; food
+lookup and risk classification belong to later prompts.
 
 ## 7. Run backend tests
 
@@ -105,6 +139,9 @@ From `backend` with the virtual environment activated and PostgreSQL running:
 ```bash
 pytest
 ```
+
+Integration tests use `TEST_DATABASE_URL`, including a real PostgreSQL query;
+the unavailable-database response is also tested.
 
 Typecheck the mobile app from `mobile`:
 
