@@ -50,7 +50,7 @@ local development.
 | GET | `/dependents/{id}/meals` | Stored meal logs, newest first; `[]` if none |
 | GET | `/dependents/{id}/alerts` | Stored active/acknowledged alerts, newest first; `[]` if none |
 | PATCH | `/alerts/{id}` | Accepts only `{ "status": "acknowledged" }`; repeat acknowledgement is safe |
-| POST | `/dependents/{id}/scan` | After authentication and ownership checks, HTTP 501 `NOT_IMPLEMENTED` |
+| POST | `/dependents/{id}/scan` | Classify a barcode and save its meal log and optional alert; see [scan contract](scan.md) |
 
 Create body:
 
@@ -88,7 +88,7 @@ Every application/framework error uses:
 Validation errors are 422 `VALIDATION_ERROR`; duplicate emails are 409
 `DUPLICATE_EMAIL`; absent/invalid bearer tokens are 401 `UNAUTHORIZED`. Other
 standard codes include `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `DATABASE_ERROR`,
-`INTERNAL_ERROR`, and `NOT_IMPLEMENTED`. Raw SQL, submitted credentials and
+`INTERNAL_ERROR`, and scan/lookup errors documented in [scanning](scan.md). Raw SQL, submitted credentials and
 internal exception details are not returned.
 
 Both an unowned and a nonexistent **valid record ID** return the identical 403

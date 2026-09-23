@@ -40,7 +40,8 @@ encoding.
 The generator uses a local `random.Random(42)`. It first computes every clean
 label using the required priority rules. Then exactly 250 distinct rows (5%)
 receive a randomly selected different label. Noise may change even an allergy
-label; runtime hard safety overrides remain a separate later requirement.
+label; runtime hard safety overrides in `app/ml/predict.py` prevent allergy and
+threshold-qualified condition conflicts from being classified below danger.
 
 No labels are assigned to enforce class quotas. A balance check refuses to write
 if any final class is below 10%; sampling assumptions must be adjusted in that
@@ -85,9 +86,10 @@ age_band_elderly
 
 The bare `DecisionTreeClassifier(max_depth=5, class_weight="balanced",
 random_state=42)` is fitted only on the 4000 training rows. The saved model is
-not refitted on the test set. Use `encode_features()` before future prediction;
-it rejects unknown age bands and never uses the target label. Required raw
-features and model column order are validated explicitly.
+not refitted on the test set. Runtime `app/ml/predict.py` constructs the same
+one-hot columns in the saved order, rejecting unknown age bands. Unlike training
+validation, runtime accepts nonnegative ratios above 2 (real products can exceed
+twice a daily target). No target labels enter prediction features.
 
 Artifacts: `risk_model.pkl` (joblib), `feature_order.json`, `tree_readable.txt`
 (full tree via `export_text`, thresholds shown to six decimals), `evaluation.txt`
@@ -108,8 +110,8 @@ danger       19       9    247
 
 Full precision, recall, F1 and support are in `evaluation.txt`. Warning recall
 is 77.78%; overall accuracy does not mean every rule is perfectly learned.
-The application's required allergy and condition safety overrides must still be
-implemented before this model is used for scanning.
+The application applies allergy and condition safety overrides before using the
+tree. Other cases use its prediction, including its imperfections near thresholds.
 
 ## Dataset investigation and limitations
 
@@ -127,8 +129,10 @@ search, noise removal or rule-generated feature was used. The original holdout
 informed the sampling investigation, so 92.9% is a development acceptance result
 on the revised synthetic distribution, not an independent clinical validation.
 
-Tests retrain twice, compare model predictions and all saved artifact bytes, and
-reload the committed model. Reproduce with the environment recorded in
+Tests retrain twice and compare new artifact bytes. Against the committed model,
+they compare every tree node/value, parameters, feature order, classes and all
+dataset predictions; pickle memo-table bytes can differ after runtime loading.
+Text artifacts are compared byte-for-byte. Reproduce with the environment recorded in
 `evaluation.json` (Python 3.14.7, scikit-learn 1.9.1, pandas 3.0.6, joblib 1.6.0).
 Library/version changes may change tree serialization and require retraining;
 no dependencies were added by this training step.

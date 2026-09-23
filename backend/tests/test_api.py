@@ -139,7 +139,7 @@ def test_dependent_crud_and_targets(client, headers, record, db_session, owner):
     assert changed['daily_sugar_g'] < profile['daily_sugar_g']
     assert client.get(path + '/meals', headers=headers).json() == []
     assert client.get(path + '/alerts', headers=headers).json() == []
-    assert_error(client.post(path + '/scan', headers=headers, json={'barcode': '123'}), 501, 'NOT_IMPLEMENTED')
+    assert_error(client.post(path + '/scan', headers=headers, json={'barcode': '123'}), 422, 'VALIDATION_ERROR')
     assert client.delete(path, headers=headers).status_code == 204
     assert client.get('/dependents', headers=headers).json() == []
     assert_error(client.get(path, headers=headers), 403, 'FORBIDDEN')
@@ -167,7 +167,7 @@ def test_patch_validation_and_rollback(client, headers, record, payload):
 
 @pytest.mark.parametrize('method,suffix,payload', [
     ('get', '', None), ('patch', '', {'name': 'Stolen'}), ('delete', '', None),
-    ('get', '/meals', None), ('get', '/alerts', None), ('post', '/scan', {}),
+    ('get', '/meals', None), ('get', '/alerts', None), ('post', '/scan', {'barcode': '12345678'}),
 ])
 def test_ownership_indistinguishable_from_missing(client, db_session, record, method, suffix, payload):
     other = User(name='Other', email='other@example.test', password_hash='unused')

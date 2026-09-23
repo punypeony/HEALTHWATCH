@@ -1,6 +1,7 @@
 import json
 
 import joblib
+import numpy as np
 import pandas as pd
 import pytest
 from sklearn.tree import DecisionTreeClassifier, export_text
@@ -79,7 +80,20 @@ def test_training_artifacts_and_accuracy_are_reproducible(tmp_path):
     for filename in ('risk_model.pkl', 'feature_order.json', 'tree_readable.txt', 'evaluation.json', 'evaluation.txt'):
         expected = (tmp_path / 'first' / filename).read_bytes()
         assert expected == (tmp_path / 'second' / filename).read_bytes()
-        assert expected == (training.ML_DIR / filename).read_bytes()
+        if filename != 'risk_model.pkl':
+            assert expected == (training.ML_DIR / filename).read_bytes()
+    # Loading the runtime model earlier in this process can change pickle's
+    # memoized string references (e.g. max_depth) without changing model state.
+    # Compare every tree node/value, parameters, classes and predictions against
+    # the committed model, rather than requiring identical pickle memo tables.
+    committed = joblib.load(training.ML_DIR / 'risk_model.pkl')
+    assert committed.get_params() == first.get_params()
+    np.testing.assert_array_equal(committed.classes_, first.classes_)
+    np.testing.assert_array_equal(committed.feature_names_in_, first.feature_names_in_)
+    for key, value in first.tree_.__getstate__().items():
+        np.testing.assert_array_equal(committed.tree_.__getstate__()[key], value)
+    all_features = training.encode_features(training.load_training_data()[training.FEATURES])
+    np.testing.assert_array_equal(committed.predict(all_features), first.predict(all_features))
     loaded = joblib.load(tmp_path / 'first' / 'risk_model.pkl')
     assert (loaded.predict(x_test) == first.predict(x_test)).all()
     order = json.loads((tmp_path / 'first' / 'feature_order.json').read_text())

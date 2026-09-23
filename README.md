@@ -4,10 +4,11 @@ Caregiver-facing Expo app and FastAPI backend for monitoring food consumption of
 
 The backend now includes authentication and caregiver-owned dependent management.
 See [API usage and PowerShell login example](docs/api.md) for endpoint contracts,
-JWT setup, ownership rules, and errors. Food scanning remains a 501 placeholder.
+JWT setup, ownership rules, and errors. The [scan endpoint](docs/scan.md) classifies
+products and stores meal logs and warning/danger alerts atomically.
 
 The [food lookup module](docs/food_lookup.md) supports Open Food Facts, PostgreSQL
-caching, and deterministic offline demo barcodes. It is not yet wired into scanning.
+caching, and deterministic offline demo barcodes used by scanning.
 
 ## 1. Start PostgreSQL
 

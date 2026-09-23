@@ -153,7 +153,7 @@ def fetch_product(barcode: str) -> dict:
     """Return canonical nutrition; demo mode never touches the real cache/network.
 
     A short independent cache transaction commits only the successful product.
-    Future scan transactions can use its barcode to reference the cached row.
+    Scan transactions use its barcode to reference the cached row.
     """
     barcode = validate_barcode(barcode)
     if os.getenv('DEMO_MODE', 'false').strip().lower() == 'true':

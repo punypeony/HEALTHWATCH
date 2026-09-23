@@ -6,10 +6,15 @@ from sqlalchemy import select
 
 from app.auth import (CurrentUser, DbSession, authenticate_user, create_access_token, register_user)
 from app.dependents import create_dependent, owned_alert, owned_dependent, update_dependent
-from app.errors import ApiError
+from app.food_lookup import fetch_product
+from app.ml.predict import predict_risk
+from app.scan import (validate_scan_input, calculate_product_percentages, check_allergy_match,
+                      check_condition_conflict, age_band_for, store_scan_product, create_meal_log,
+                      create_alert_if_needed, return_scan_result)
 from app.models import Alert, Dependent, MealLog
 from app.schemas import (AlertOutput, AlertPatch, DependentCreate, DependentOutput,
-                         DependentPatch, LoginInput, MealOutput, RegisterInput, TokenOutput, UserOutput)
+                         DependentPatch, LoginInput, MealOutput, RegisterInput, TokenOutput, UserOutput,
+                         ScanInput, ScanOutput)
 
 router = APIRouter()
 RecordId = Annotated[int, Path(ge=1, le=2147483647)]
@@ -76,7 +81,26 @@ def acknowledge_alert(id: RecordId, data: AlertPatch, session: DbSession, user: 
     return alert
 
 
-@router.post('/dependents/{id}/scan')
-def scan_placeholder(id: RecordId, session: DbSession, user: CurrentUser):
-    owned_dependent(session, id, user.id)
-    raise ApiError(501, 'NOT_IMPLEMENTED', 'Food scanning is not implemented yet.')
+@router.post('/dependents/{id}/scan', response_model=ScanOutput)
+def scan_product(id: RecordId, data: ScanInput, session: DbSession, user: CurrentUser):
+    dependent = owned_dependent(session, id, user.id)
+    barcode = validate_scan_input(data.barcode, dependent)
+    product = fetch_product(barcode)
+    profile = dependent.dietary_profile
+    percentages = calculate_product_percentages(product, profile)
+    allergy = check_allergy_match(profile.allergies, product['raw_response'])
+    conflict = check_condition_conflict(profile.conditions, percentages)
+    prediction = predict_risk(**percentages, has_allergy_match=allergy,
+                              has_condition_conflict=conflict, age_band=age_band_for(dependent.age))
+    # Auth/ownership reads already began this session's transaction. All scan
+    # writes share its single commit; a failed flush/commit rolls back every write.
+    try:
+        stored_product = store_scan_product(session, product)
+        meal = create_meal_log(session, dependent.id, stored_product.id, prediction)
+        alert = create_alert_if_needed(session, meal)
+        result = return_scan_result(product, percentages, prediction, meal, alert)
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    return result

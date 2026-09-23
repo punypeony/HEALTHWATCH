@@ -1,4 +1,5 @@
 """FastAPI application entrypoint."""
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,8 +12,16 @@ from app.database import check_database_connection
 from app.errors import (ApiError, api_error_handler, validation_error_handler,
                         http_error_handler, database_error_handler, unexpected_error_handler)
 from app.routes import router
+from app.ml.predict import load_model
 
-app = FastAPI(title="Food Consumption Health Monitoring System")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    load_model()
+    yield
+
+
+app = FastAPI(title="Food Consumption Health Monitoring System", lifespan=lifespan)
 app.add_exception_handler(ApiError, api_error_handler)
 app.add_exception_handler(RequestValidationError, validation_error_handler)
 app.add_exception_handler(HTTPException, http_error_handler)

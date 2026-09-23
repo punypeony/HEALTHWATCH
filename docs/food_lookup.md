@@ -52,10 +52,10 @@ store/reuse demo products when creating meal logs.
 | 2000000000039 | Demo Salty Crackers | 300 | 2200 | 5 |
 
 For the seeded hypertension dependent these are intended to exercise safe,
-warning (sugar 40 / 45.53), and danger (sodium) rules in the later classifier.
+warning (sugar 40 / 45.53), and danger (sodium) classifications in the scan endpoint.
 They are synthetic demo foods, not claims about real products. The salty item
 also includes structured `en:milk` allergen data. Lookup itself does not classify
-risk, create meals or alerts, or change the scan endpoint's 501 placeholder.
+risk or create meals or alerts. The [scan route](scan.md) orchestrates those steps.
 
 ## Verification
 

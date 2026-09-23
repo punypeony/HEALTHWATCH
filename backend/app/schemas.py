@@ -120,3 +120,30 @@ class AlertOutput(BaseModel):
 
 class AlertPatch(InputModel):
     status: Literal['acknowledged']
+
+
+class ScanInput(InputModel):
+    barcode: str = Field(strict=True, min_length=8, max_length=14, pattern=r'^[0-9]+$')
+
+
+class ScanProductOutput(BaseModel):
+    barcode: str
+    name: str
+    calories: float
+    sodium_mg: float
+    sugar_g: float
+
+
+class PercentagesOutput(BaseModel):
+    sodium_pct: float
+    sugar_pct: float
+    calorie_pct: float
+
+
+class ScanOutput(BaseModel):
+    risk_label: Literal['safe', 'warning', 'danger']
+    product: ScanProductOutput
+    percentages: PercentagesOutput
+    reasons: list[str]
+    meal_log_id: int
+    alert_id: int | None
