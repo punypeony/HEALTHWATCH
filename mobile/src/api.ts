@@ -8,6 +8,7 @@ import type {
   LoginRequest,
   MealLog,
   RegisterRequest,
+  ScanResult,
   TokenResponse,
   User,
 } from "./types";
@@ -137,5 +138,12 @@ export function acknowledgeAlert(id: number): Promise<Alert> {
   return request<Alert>(`/alerts/${id}`, {
     method: "PATCH",
     body: { status: "acknowledged" },
+  });
+}
+
+export function scanDependent(dependentId: number, barcode: string): Promise<ScanResult> {
+  return request<ScanResult>(`/dependents/${dependentId}/scan`, {
+    method: "POST",
+    body: { barcode },
   });
 }

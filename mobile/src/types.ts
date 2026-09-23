@@ -85,6 +85,29 @@ export type Alert = {
   created_at: string;
 };
 
+export type ScanProduct = {
+  barcode: string;
+  name: string;
+  calories: number;
+  sodium_mg: number;
+  sugar_g: number;
+};
+
+export type ScanPercentages = {
+  sodium_pct: number;
+  sugar_pct: number;
+  calorie_pct: number;
+};
+
+export type ScanResult = {
+  risk_label: RiskLabel;
+  product: ScanProduct;
+  percentages: ScanPercentages;
+  reasons: string[];
+  meal_log_id: number;
+  alert_id: number | null;
+};
+
 export type AuthStackParamList = {
   Login: { registeredEmail?: string } | undefined;
   Register: undefined;
@@ -97,7 +120,7 @@ export type AppStackParamList = {
 };
 
 export type DependentTabParamList = {
-  Scan: undefined;
+  Scan: { dependentId: number };
   History: { dependentId: number };
   Alerts: { dependentId: number };
   Summary: undefined;

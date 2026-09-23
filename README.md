@@ -133,8 +133,8 @@ Set the variable before starting Expo, then open the QR code in a compatible Exp
 Go app. Keep FastAPI running and allow port 8000 through the Windows firewall on
 your private network if prompted. Android emulators use `http://10.0.2.2:8000` by
 default; iOS Simulator uses `http://127.0.0.1:8000`. Web dependencies are not included
-in this native scaffold. The scanner currently displays raw barcodes only; food
-lookup and risk classification belong to later prompts.
+in this native scaffold. The Scan tab sends a detected or typed barcode to
+`POST /dependents/{id}/scan` and shows the backend result.
 
 ## 7. Run backend tests
 

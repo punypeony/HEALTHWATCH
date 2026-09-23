@@ -16,7 +16,7 @@ export function DependentTabs({ route }: Props) {
 
   return (
     <Tab.Navigator key={String(dependentId)} screenOptions={{ headerShown: false }}>
-      <Tab.Screen name="Scan" component={ScannerScreen} />
+      <Tab.Screen name="Scan" component={ScannerScreen} initialParams={{ dependentId }} />
       <Tab.Screen
         name="History"
         component={HistoryScreen}
