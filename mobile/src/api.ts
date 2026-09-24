@@ -11,6 +11,7 @@ import type {
   ScanResult,
   TokenResponse,
   User,
+  WeeklySummary,
 } from "./types";
 import { getApiBaseUrl } from "./utils/apiBaseUrl";
 
@@ -139,6 +140,10 @@ export function acknowledgeAlert(id: number): Promise<Alert> {
     method: "PATCH",
     body: { status: "acknowledged" },
   });
+}
+
+export function getWeeklySummary(dependentId: number): Promise<WeeklySummary> {
+  return request<WeeklySummary>(`/dependents/${dependentId}/summary/weekly`);
 }
 
 export function scanDependent(dependentId: number, barcode: string): Promise<ScanResult> {

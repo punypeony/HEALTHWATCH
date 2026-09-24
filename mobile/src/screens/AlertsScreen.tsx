@@ -1,14 +1,20 @@
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { acknowledgeAlert, listAlerts } from "../api";
 import { ScreenStatus } from "../components/ScreenStatus";
 import { useFocusedQuery } from "../hooks/useFocusedQuery";
 import { placeholder } from "../theme/placeholder";
-import type { DependentTabParamList } from "../types";
+import type { Alert, DependentTabParamList, RiskLabel } from "../types";
 import { errorMessage } from "../utils/errors";
 import { formatWhen } from "../utils/format";
+
+const RISK_COLOR: Record<RiskLabel, string> = {
+  safe: "#1b7f3a",
+  warning: "#c48a00",
+  danger: "#b00020",
+};
 
 type Props = BottomTabScreenProps<DependentTabParamList, "Alerts">;
 
@@ -42,39 +48,22 @@ export function AlertsScreen({ route }: Props) {
     );
   }
 
-  if (alerts.data.length === 0) {
-    return (
-      <ScreenStatus
-        title="Alerts"
-        message="No alerts for this dependent yet."
-        actionLabel="Refresh"
-        onAction={alerts.retry}
-      />
-    );
-  }
+  const active = alerts.data.filter((alert) => alert.status === "active");
 
   return (
     <ScrollView contentContainerStyle={placeholder.screen}>
       <Text style={placeholder.title}>Alerts</Text>
+      {active.length === 0 ? <Text>No active alerts.</Text> : null}
       {actionError ? <Text style={placeholder.error}>{actionError}</Text> : null}
       {alerts.data.map((alert) => (
-        <View key={alert.id} style={placeholder.card}>
-          <Text>{alert.message}</Text>
-          <Text>
-            {alert.status} · {formatWhen(alert.created_at)}
-          </Text>
-          {alert.status === "active" ? (
-            <Pressable
-              onPress={() => {
-                void onAcknowledge(alert.id);
-              }}
-              style={placeholder.button}
-              disabled={pendingId === alert.id}
-            >
-              {pendingId === alert.id ? <ActivityIndicator /> : <Text>Acknowledge</Text>}
-            </Pressable>
-          ) : null}
-        </View>
+        <AlertCard
+          key={alert.id}
+          alert={alert}
+          pending={pendingId === alert.id}
+          onAcknowledge={() => {
+            void onAcknowledge(alert.id);
+          }}
+        />
       ))}
       <Pressable onPress={alerts.retry} style={placeholder.button}>
         <Text>Refresh</Text>
@@ -82,3 +71,38 @@ export function AlertsScreen({ route }: Props) {
     </ScrollView>
   );
 }
+
+function AlertCard({
+  alert,
+  pending,
+  onAcknowledge,
+}: {
+  alert: Alert;
+  pending: boolean;
+  onAcknowledge: () => void;
+}) {
+  const acknowledged = alert.status === "acknowledged";
+  return (
+    <View style={[placeholder.card, acknowledged ? styles.acknowledged : styles.active]}>
+      <Text>{alert.product_name}</Text>
+      <Text style={{ color: RISK_COLOR[alert.risk_label] }}>{alert.risk_label.toUpperCase()}</Text>
+      <Text>{alert.message}</Text>
+      <Text>{formatWhen(alert.created_at)}</Text>
+      <Text>{acknowledged ? "Acknowledged" : "Active"}</Text>
+      {acknowledged ? null : (
+        <Pressable onPress={onAcknowledge} style={placeholder.button} disabled={pending}>
+          {pending ? <ActivityIndicator /> : <Text>Acknowledge</Text>}
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  active: {
+    borderColor: "#b00020",
+  },
+  acknowledged: {
+    borderColor: "#888888",
+  },
+});

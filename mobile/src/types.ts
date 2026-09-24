@@ -83,6 +83,17 @@ export type Alert = {
   message: string;
   status: AlertStatus;
   created_at: string;
+  product_name: string;
+  risk_label: RiskLabel;
+};
+
+export type WeeklySummary = {
+  total_scans: number;
+  safe_count: number;
+  warning_count: number;
+  danger_count: number;
+  common_reason: string | null;
+  text: string;
 };
 
 export type ScanProduct = {
@@ -123,5 +134,5 @@ export type DependentTabParamList = {
   Scan: { dependentId: number };
   History: { dependentId: number };
   Alerts: { dependentId: number };
-  Summary: undefined;
+  Summary: { dependentId: number };
 };

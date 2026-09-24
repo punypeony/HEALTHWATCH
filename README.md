@@ -1,6 +1,6 @@
 # Food Consumption Health Monitoring System
 
-Caregiver-facing Expo app and FastAPI backend for monitoring food consumption of dependent relatives. This repository currently contains the initial project scaffold.
+Caregiver-facing Expo app and FastAPI backend for monitoring food consumption of dependent relatives.
 
 The backend now includes authentication and caregiver-owned dependent management.
 See [API usage and PowerShell login example](docs/api.md) for endpoint contracts,
@@ -9,6 +9,13 @@ products and stores meal logs and warning/danger alerts atomically.
 
 The [food lookup module](docs/food_lookup.md) supports Open Food Facts, PostgreSQL
 caching, and deterministic offline demo barcodes used by scanning.
+
+Other project notes: [requirements](docs/requirements.md), [diagrams](docs/diagrams.md),
+[code file mapping](docs/code-mapping.md), [defect log](docs/defect-log.md), and
+[demo script](docs/demo-script.md). The database ER diagram is in
+[database.md](docs/database.md). Machine learning evaluation is in
+[backend/ml/evaluation.txt](backend/ml/evaluation.txt) and the readable tree is
+[backend/ml/tree_readable.txt](backend/ml/tree_readable.txt).
 
 ## 1. Start PostgreSQL
 

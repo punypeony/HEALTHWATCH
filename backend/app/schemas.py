@@ -116,6 +116,35 @@ class AlertOutput(BaseModel):
     message: str
     status: Literal['active', 'acknowledged']
     created_at: datetime
+    product_name: str
+    risk_label: Literal['safe', 'warning', 'danger']
+
+    @model_validator(mode='before')
+    @classmethod
+    def include_meal(cls, value):
+        meal = getattr(value, 'meal_log', None)
+        if meal is None:
+            return value
+        product = getattr(meal, 'product', None)
+        return {
+            'id': value.id,
+            'dependent_id': value.dependent_id,
+            'meal_log_id': value.meal_log_id,
+            'message': value.message,
+            'status': value.status,
+            'created_at': value.created_at,
+            'product_name': product.name if product is not None else '',
+            'risk_label': meal.risk_label,
+        }
+
+
+class WeeklySummaryOutput(BaseModel):
+    total_scans: int
+    safe_count: int
+    warning_count: int
+    danger_count: int
+    common_reason: str | None
+    text: str
 
 
 class AlertPatch(InputModel):

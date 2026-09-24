@@ -50,6 +50,7 @@ local development.
 | GET | `/dependents/{id}/meals` | Stored meal logs, newest first; `[]` if none |
 | GET | `/dependents/{id}/alerts` | Stored active/acknowledged alerts, newest first; `[]` if none |
 | PATCH | `/alerts/{id}` | Accepts only `{ "status": "acknowledged" }`; repeat acknowledgement is safe |
+| GET | `/dependents/{id}/summary/weekly` | Last 7 days of meal logs: counts, common reason, and one templated summary |
 | POST | `/dependents/{id}/scan` | Classify a barcode and save its meal log and optional alert; see [scan contract](scan.md) |
 
 Create body:

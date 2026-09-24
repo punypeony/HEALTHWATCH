@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Response
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.auth import (CurrentUser, DbSession, authenticate_user, create_access_token, register_user)
 from app.dependents import create_dependent, owned_alert, owned_dependent, update_dependent
@@ -14,7 +15,8 @@ from app.scan import (validate_scan_input, calculate_product_percentages, check_
 from app.models import Alert, Dependent, MealLog
 from app.schemas import (AlertOutput, AlertPatch, DependentCreate, DependentOutput,
                          DependentPatch, LoginInput, MealOutput, RegisterInput, TokenOutput, UserOutput,
-                         ScanInput, ScanOutput)
+                         ScanInput, ScanOutput, WeeklySummaryOutput)
+from app.summary import weekly_summary
 
 router = APIRouter()
 RecordId = Annotated[int, Path(ge=1, le=2147483647)]
@@ -68,8 +70,11 @@ def list_meals(id: RecordId, session: DbSession, user: CurrentUser):
 @router.get('/dependents/{id}/alerts', response_model=list[AlertOutput])
 def list_alerts(id: RecordId, session: DbSession, user: CurrentUser):
     owned_dependent(session, id, user.id)
-    return session.scalars(select(Alert).where(Alert.dependent_id == id)
-                           .order_by(Alert.created_at.desc(), Alert.id.desc())).all()
+    return session.scalars(
+        select(Alert).where(Alert.dependent_id == id)
+        .options(selectinload(Alert.meal_log).selectinload(MealLog.product))
+        .order_by(Alert.created_at.desc(), Alert.id.desc())
+    ).all()
 
 
 @router.patch('/alerts/{id}', response_model=AlertOutput)
@@ -78,7 +83,16 @@ def acknowledge_alert(id: RecordId, data: AlertPatch, session: DbSession, user: 
     alert.status = data.status
     session.commit()
     session.refresh(alert)
+    _ = alert.meal_log.product
     return alert
+
+
+@router.get('/dependents/{id}/summary/weekly', response_model=WeeklySummaryOutput)
+def get_weekly_summary(id: RecordId, session: DbSession, user: CurrentUser):
+    owned_dependent(session, id, user.id)
+    result = weekly_summary(session, id)
+    session.commit()
+    return result
 
 
 @router.post('/dependents/{id}/scan', response_model=ScanOutput)

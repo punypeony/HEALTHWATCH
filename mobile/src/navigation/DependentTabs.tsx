@@ -27,7 +27,7 @@ export function DependentTabs({ route }: Props) {
         component={AlertsScreen}
         initialParams={{ dependentId }}
       />
-      <Tab.Screen name="Summary" component={SummaryScreen} />
+      <Tab.Screen name="Summary" component={SummaryScreen} initialParams={{ dependentId }} />
     </Tab.Navigator>
   );
 }
