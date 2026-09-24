@@ -80,8 +80,19 @@ def test_training_artifacts_and_accuracy_are_reproducible(tmp_path):
     for filename in ('risk_model.pkl', 'feature_order.json', 'tree_readable.txt', 'evaluation.json', 'evaluation.txt'):
         expected = (tmp_path / 'first' / filename).read_bytes()
         assert expected == (tmp_path / 'second' / filename).read_bytes()
-        if filename != 'risk_model.pkl':
-            assert expected == (training.ML_DIR / filename).read_bytes()
+        if filename == 'risk_model.pkl':
+            continue
+        committed_bytes = (training.ML_DIR / filename).read_bytes()
+        if filename == 'evaluation.json':
+            # The report records the interpreter that wrote it. Metrics must match
+            # on another Python version; the version string itself does not.
+            generated = json.loads(expected)
+            committed = json.loads(committed_bytes)
+            assert isinstance(generated['python'], str) and isinstance(committed['python'], str)
+            generated['python'] = committed['python'] = ''
+            assert generated == committed
+        else:
+            assert expected == committed_bytes
     # Loading the runtime model earlier in this process can change pickle's
     # memoized string references (e.g. max_depth) without changing model state.
     # Compare every tree node/value, parameters, classes and predictions against
