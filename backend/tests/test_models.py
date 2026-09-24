@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from app.models import User, Dependent, DietaryProfile, ScannedProduct, MealLog, Alert, Summary
 from app.passwords import hash_password
 from app.targets import compute_daily_targets
-from seed import seed_demo, DEMO_EMAIL, DEMO_PASSWORD
+from seed import reset_demo, seed_demo, DEMO_EMAIL, DEMO_PASSWORD
 
 
 @pytest.fixture
@@ -157,6 +157,27 @@ def test_seed_is_idempotent_across_commits(db_session):
     low_sodium, low_sugar = sorted(user.dependents, key=lambda dep: dep.name, reverse=True)
     assert low_sodium.dietary_profile.daily_sodium_mg == 1400
     assert low_sugar.dietary_profile.daily_sugar_g < low_sugar.dietary_profile.daily_calories / 40
+
+
+def test_reset_demo_keeps_other_users(db_session):
+    other = User(name='Other', email='other@example.test', password_hash='keep-me')
+    other_dependent = Dependent(caregiver=other, name='Other Relative', age=30, height_cm=170, weight_kg=70, sex='female')
+    other_dependent.dietary_profile = DietaryProfile(allergies=[], conditions=[])
+    db_session.add(other_dependent)
+    seed_demo(db_session)
+    db_session.commit()
+    other_id = other.id
+    reset_demo(db_session)
+    db_session.commit()
+    db_session.expire_all()
+    kept = db_session.get(User, other_id)
+    assert kept.email == 'other@example.test'
+    assert kept.password_hash == 'keep-me'
+    assert len(kept.dependents) == 1
+    demo = db_session.scalar(select(User).where(User.email == DEMO_EMAIL))
+    assert {dep.name for dep in demo.dependents} == {'Demo Hypertension', 'Demo Diabetes'}
+    assert db_session.scalar(select(func.count()).select_from(MealLog).where(
+        MealLog.dependent_id.in_([dep.id for dep in demo.dependents]))) == 0
 
 
 def test_password_hash_is_salted_and_verifiable():

@@ -225,3 +225,38 @@ def test_demo_scan_offline(client, headers, dependent, monkeypatch, db_session):
         assert response.json()['risk_label'] == 'safe'
     assert db_session.scalar(select(func.count()).select_from(ScannedProduct)) == 1
     assert db_session.scalar(select(func.count()).select_from(MealLog)) == 2
+
+
+def test_classroom_demo_barcodes_stay_offline(client, db_session, monkeypatch):
+    from seed import DEMO_EMAIL, seed_demo
+    from app.food_lookup import fetch_product
+    monkeypatch.setenv('DEMO_MODE', 'true')
+    monkeypatch.setattr(routes, 'fetch_product', fetch_product)
+    caregiver = seed_demo(db_session)
+    db_session.commit()
+    dependent = next(dep for dep in caregiver.dependents if dep.name == 'Demo Hypertension')
+    headers = {'Authorization': 'Bearer ' + create_access_token(caregiver.id)}
+    expected = {
+        '2000000000015': ('safe', None),
+        '2000000000022': ('warning', "Sugar is high compared with the dependent's daily target."),
+        '2000000000039': ('danger', 'The product conflicts with a recorded dietary condition.'),
+    }
+    for barcode, (label, reason) in expected.items():
+        response = client.post(f'/dependents/{dependent.id}/scan', headers=headers, json={'barcode': barcode})
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body['risk_label'] == label
+        assert body['product']['barcode'] == barcode
+        if label == 'safe':
+            assert body['alert_id'] is None
+        else:
+            assert body['alert_id'] is not None
+            assert reason in body['reasons']
+    meals = client.get(f'/dependents/{dependent.id}/meals', headers=headers)
+    alerts = client.get(f'/dependents/{dependent.id}/alerts', headers=headers)
+    summary = client.get(f'/dependents/{dependent.id}/summary/weekly', headers=headers)
+    assert meals.status_code == alerts.status_code == summary.status_code == 200
+    assert [meal['risk_label'] for meal in meals.json()] == ['danger', 'warning', 'safe']
+    assert len(alerts.json()) == 2
+    assert summary.json()['danger_count'] == 1
+    assert db_session.scalar(select(User.email).where(User.email == DEMO_EMAIL)) == DEMO_EMAIL
