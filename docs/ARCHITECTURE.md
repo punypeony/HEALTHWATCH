@@ -1,0 +1,140 @@
+# Architecture
+
+This describes the code in the repository. The mobile UI uses placeholder styling. There is no chatbot, recommendation engine, push notification service, or remote model API.
+
+## Runtime pieces
+
+The phone app is Expo, React Native, and TypeScript. Navigation is React Navigation: a stack for login, register, and the dependent list, then bottom tabs for one dependent (Scan, History, Alerts, Summary).
+
+The phone calls FastAPI over HTTP. `mobile/src/api.ts` attaches `Authorization: Bearer <token>` from device storage (`expo-secure-store` on iOS and Android, `localStorage` on web). The API base URL is `EXPO_PUBLIC_API_URL`, or `http://10.0.2.2:8000` on Android emulators, otherwise `http://127.0.0.1:8000`.
+
+FastAPI (`backend/app/main.py`) loads `backend/ml/risk_model.pkl` once at startup. Routes in `backend/app/routes.py` call separate functions for auth, dependents, food lookup, scan steps, prediction, and weekly summary. The caregiver id comes from the JWT `sub` claim. A client-supplied caregiver id is not used for authorization.
+
+PostgreSQL 16 runs from `docker-compose.yml` (database `food_monitor`, user `postgres`). SQLAlchemy models are in `backend/app/models.py`. `/health` runs a database check and returns `{"status":"ok"}`, or `503` with the standard error body if PostgreSQL is down.
+
+Food data has two sources, chosen by `DEMO_MODE`:
+
+- `DEMO_MODE=true` reads `backend/demo_products.json` and does not call the network or the product cache.
+- `DEMO_MODE=false` checks `scanned_products` by barcode, then requests `https://world.openfoodfacts.org/api/v2/product/{barcode}.json`. A successful lookup is inserted into `scanned_products`.
+
+Nutrition used by the classifier is per 100 g: calories (kcal), sodium (mg), and sugar (g). Missing or non-finite values are rejected. Volume-only (`ml`) nutrition is not accepted.
+
+## Scan transaction
+
+`POST /dependents/{id}/scan` in `backend/app/routes.py` does the following, in order:
+
+1. `owned_dependent` confirms the dependent belongs to the JWT caregiver.
+2. `validate_scan_input` checks an 8–14 digit barcode and that a dietary profile exists.
+3. `fetch_product` returns the cached, demo, or Open Food Facts product.
+4. `calculate_product_percentages` divides each nutrient by the dependent's daily target.
+5. `check_allergy_match` compares lowercase allergy labels with structured allergen tags.
+6. `check_condition_conflict` sets a conflict when `hypertension` meets sodium above 0.5 of target, or `diabetic` meets sugar above 0.5 of target.
+7. `predict_risk` applies hard rules before the tree: an allergy match is `danger`; a condition conflict with sodium or sugar above 0.5 is `danger`; otherwise the loaded decision tree predicts `safe`, `warning`, or `danger`.
+8. One database transaction stores the product reference, the meal log, and an alert when the label is `warning` or `danger`. A failed commit rolls the writes back.
+9. The response includes the label, product, percentages, reasons, `meal_log_id`, and `alert_id` (`null` when no alert is created).
+
+Reasons are fixed sentences in `backend/app/ml/predict.py`. The tree is not inspected at request time.
+
+## Accounts and dependents
+
+Register (`POST /auth/register`) stores a PBKDF2-SHA256 password hash and does not return a token. Login (`POST /auth/login`) returns a JWT (HS256, issuer `food-monitor`, audience `food-monitor-mobile`, one hour).
+
+Creating or updating a dependent writes one `dietary_profiles` row. `compute_daily_targets` in `backend/app/targets.py` sets sodium, sugar, and calories from age, height, weight, sex, and conditions. The caregiver does not enter those three numbers. A `before_flush` hook recomputes them and rejects deleting the profile while the dependent remains.
+
+## Weekly summary
+
+`GET /dependents/{id}/summary/weekly` counts that dependent's meal logs from the last 7 days, finds the most common stored reason text, and writes one templated sentence. The row is upserted in `summaries` for that dependent and window start. The text is ordinary Python, not a language model.
+
+## Decision tree
+
+The classifier is `sklearn.tree.DecisionTreeClassifier` (`max_depth=5`, `class_weight="balanced"`, `random_state=42`), saved with joblib and loaded in-process. Training uses 5000 synthetic rows and an 80/20 stratified split. Measured accuracy, the confusion matrix, and feature importances are in [MODEL_EVALUATION.md](MODEL_EVALUATION.md).
+
+Features, in `backend/ml/feature_order.json`: `sodium_pct`, `sugar_pct`, `calorie_pct`, `has_allergy_match`, `has_condition_conflict`, `age_band_child`, `age_band_adult`, `age_band_elderly`.
+
+The export below is the committed file `backend/ml/tree_readable.txt`. Hard safety rules in `predict_risk` still override this tree when an allergy matches, or when a condition conflict crosses the 0.5 sodium or sugar threshold.
+
+```text
+|--- sugar_pct <= 0.999739
+|   |--- sugar_pct <= 0.801483
+|   |   |--- sodium_pct <= 0.798984
+|   |   |   |--- has_allergy_match <= 0.500000
+|   |   |   |   |--- calorie_pct <= 0.795199
+|   |   |   |   |   |--- class: safe
+|   |   |   |   |--- calorie_pct >  0.795199
+|   |   |   |   |   |--- class: danger
+|   |   |   |--- has_allergy_match >  0.500000
+|   |   |   |   |--- sodium_pct <= 0.113659
+|   |   |   |   |   |--- class: danger
+|   |   |   |   |--- sodium_pct >  0.113659
+|   |   |   |   |   |--- class: danger
+|   |   |--- sodium_pct >  0.798984
+|   |   |   |--- sodium_pct <= 0.999934
+|   |   |   |   |--- has_condition_conflict <= 0.500000
+|   |   |   |   |   |--- class: warning
+|   |   |   |   |--- has_condition_conflict >  0.500000
+|   |   |   |   |   |--- class: danger
+|   |   |   |--- sodium_pct >  0.999934
+|   |   |   |   |--- calorie_pct <= 0.049550
+|   |   |   |   |   |--- class: danger
+|   |   |   |   |--- calorie_pct >  0.049550
+|   |   |   |   |   |--- class: danger
+|   |--- sugar_pct >  0.801483
+|   |   |--- has_condition_conflict <= 0.500000
+|   |   |   |--- sodium_pct <= 0.998619
+|   |   |   |   |--- has_allergy_match <= 0.500000
+|   |   |   |   |   |--- class: warning
+|   |   |   |   |--- has_allergy_match >  0.500000
+|   |   |   |   |   |--- class: danger
+|   |   |   |--- sodium_pct >  0.998619
+|   |   |   |   |--- class: danger
+|   |   |--- has_condition_conflict >  0.500000
+|   |   |   |--- calorie_pct <= 0.388379
+|   |   |   |   |--- class: danger
+|   |   |   |--- calorie_pct >  0.388379
+|   |   |   |   |--- sugar_pct <= 0.814132
+|   |   |   |   |   |--- class: safe
+|   |   |   |   |--- sugar_pct >  0.814132
+|   |   |   |   |   |--- class: danger
+|--- sugar_pct >  0.999739
+|   |--- calorie_pct <= 0.230860
+|   |   |--- calorie_pct <= 0.230312
+|   |   |   |--- calorie_pct <= 0.073477
+|   |   |   |   |--- calorie_pct <= 0.070176
+|   |   |   |   |   |--- class: danger
+|   |   |   |   |--- calorie_pct >  0.070176
+|   |   |   |   |   |--- class: warning
+|   |   |   |--- calorie_pct >  0.073477
+|   |   |   |   |--- calorie_pct <= 0.143067
+|   |   |   |   |   |--- class: danger
+|   |   |   |   |--- calorie_pct >  0.143067
+|   |   |   |   |   |--- class: danger
+|   |   |--- calorie_pct >  0.230312
+|   |   |   |--- class: warning
+|   |--- calorie_pct >  0.230860
+|   |   |--- sodium_pct <= 0.100991
+|   |   |   |--- sodium_pct <= 0.099046
+|   |   |   |   |--- sugar_pct <= 1.264913
+|   |   |   |   |   |--- class: danger
+|   |   |   |   |--- sugar_pct >  1.264913
+|   |   |   |   |   |--- class: danger
+|   |   |   |--- sodium_pct >  0.099046
+|   |   |   |   |--- class: safe
+|   |   |--- sodium_pct >  0.100991
+|   |   |   |--- sugar_pct <= 1.010805
+|   |   |   |   |--- age_band_elderly <= 0.500000
+|   |   |   |   |   |--- class: danger
+|   |   |   |   |--- age_band_elderly >  0.500000
+|   |   |   |   |   |--- class: safe
+|   |   |   |--- sugar_pct >  1.010805
+|   |   |   |   |--- class: danger
+```
+
+## Errors
+
+Handlers in `backend/app/errors.py` return:
+
+```json
+{ "error": { "code": "ERROR_CODE", "message": "Human-readable message" } }
+```
+
+`/health` success is the exception: it returns `{"status":"ok"}`.
