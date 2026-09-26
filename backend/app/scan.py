@@ -5,8 +5,9 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 
 from app.errors import ApiError
-from app.food_lookup import validate_barcode
+from app.food_lookup import nutrition_number, prepared_basis_is_100g, validate_barcode
 from app.ml.predict import CONFLICT_THRESHOLD
+from app.targets import daily_carbohydrate_g, daily_protein_g, daily_saturated_fat_g
 from app.models import Alert, MealLog, ScannedProduct
 from app.schemas import ScanOutput
 
@@ -58,11 +59,82 @@ def check_allergy_match(allergies, raw_response) -> int:
     return int(bool((wanted & present) - {''}))
 
 
-def check_condition_conflict(conditions, percentages) -> int:
-    """Project rule: hypertension/sodium or diabetic/sugar above 50% per 100g."""
-    conditions = {value.strip().lower() for value in conditions}
-    return int(('hypertension' in conditions and percentages['sodium_pct'] > CONFLICT_THRESHOLD)
-               or ('diabetic' in conditions and percentages['sugar_pct'] > CONFLICT_THRESHOLD))
+def has_condition(conditions, name: str) -> bool:
+    return name in {value.strip().lower() for value in conditions}
+
+
+def has_high_cholesterol(conditions) -> bool:
+    return has_condition(conditions, 'high cholesterol')
+
+
+def _nutrient_grams(raw_response, key: str, label: str) -> Decimal:
+    """Grams per 100 g. Missing values are not zero.
+
+    An absent per-100 g key may use the matching prepared per-100 g key when
+    Open Food Facts says that prepared basis is 100 g.
+    """
+    product = raw_response.get('product') if isinstance(raw_response, dict) else None
+    nutrients = product.get('nutriments') if isinstance(product, dict) else None
+    value = nutrients.get(key) if isinstance(nutrients, dict) else None
+    if value is None and isinstance(nutrients, dict) and key.endswith('_100g') and prepared_basis_is_100g(product):
+        value = nutrients.get(key[:-len('_100g')] + '_prepared_100g')
+    if value is None:
+        raise ApiError(422, 'PRODUCT_DATA_INVALID', f'{label} per 100 g is missing or invalid.')
+    try:
+        return nutrition_number(value)
+    except ApiError as exc:
+        raise ApiError(422, 'PRODUCT_DATA_INVALID', f'{label} per 100 g is missing or invalid.') from exc
+
+
+def saturated_fat_per_100g(raw_response) -> Decimal:
+    return _nutrient_grams(raw_response, 'saturated-fat_100g', 'Saturated fat')
+
+
+def saturated_fat_percentage(raw_response, profile) -> float:
+    return float(saturated_fat_per_100g(raw_response) / daily_saturated_fat_g(profile.daily_calories))
+
+
+def carbohydrate_per_100g(raw_response) -> Decimal:
+    return _nutrient_grams(raw_response, 'carbohydrates_100g', 'Carbohydrate')
+
+
+def carbohydrate_percentage(raw_response, profile) -> float:
+    return float(carbohydrate_per_100g(raw_response) / daily_carbohydrate_g(profile.daily_calories))
+
+
+def require_protein_per_100g(raw_response) -> Decimal:
+    """Kidney disease requires a protein value. Missing values are not zero."""
+    return _nutrient_grams(raw_response, 'proteins_100g', 'Protein')
+
+
+def protein_percentage(raw_response, weight_kg) -> float:
+    """Protein per 100 g divided by the 1.3 g/kg adult ceiling."""
+    return float(require_protein_per_100g(raw_response) / daily_protein_g(weight_kg))
+
+
+def reported_grams(grams, percentage) -> float | None:
+    """Expose per-100 g grams only after that nutrient crosses the conflict line."""
+    if grams is None or percentage is None or percentage <= CONFLICT_THRESHOLD:
+        return None
+    return float(grams)
+
+
+def check_condition_conflict(conditions, percentages, saturated_fat_pct=None, carbohydrate_pct=None,
+                             protein_pct=None) -> int:
+    """Condition rules above half of the matching daily target."""
+    normalized = {value.strip().lower() for value in conditions}
+    cholesterol = (has_high_cholesterol(normalized)
+                   and saturated_fat_pct is not None
+                   and saturated_fat_pct > CONFLICT_THRESHOLD)
+    carbohydrate = ('diabetic' in normalized
+                    and carbohydrate_pct is not None
+                    and carbohydrate_pct > CONFLICT_THRESHOLD)
+    protein = ('kidney disease' in normalized
+               and protein_pct is not None
+               and protein_pct > CONFLICT_THRESHOLD)
+    return int(('hypertension' in normalized and percentages['sodium_pct'] > CONFLICT_THRESHOLD)
+               or ('diabetic' in normalized and percentages['sugar_pct'] > CONFLICT_THRESHOLD)
+               or cholesterol or carbohydrate or protein)
 
 
 def age_band_for(age) -> str:
@@ -102,10 +174,13 @@ def create_alert_if_needed(session, meal) -> Alert | None:
     return alert
 
 
-def return_scan_result(product, percentages, prediction, meal, alert) -> ScanOutput:
+def return_scan_result(product, percentages, prediction, meal, alert,
+                       saturated_fat_g=None, carbohydrate_g=None, protein_g=None) -> ScanOutput:
     # Validate and copy response before committing; no lazy DB reads afterwards.
     return ScanOutput(**prediction,
                       product={key: product[key] for key in
                                ('barcode', 'name', 'calories', 'sodium_mg', 'sugar_g')},
                       percentages=percentages, meal_log_id=meal.id,
-                      alert_id=alert.id if alert else None)
+                      alert_id=alert.id if alert else None,
+                      saturated_fat_g=saturated_fat_g, carbohydrate_g=carbohydrate_g,
+                      protein_g=protein_g)

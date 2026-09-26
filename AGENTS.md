@@ -159,6 +159,8 @@ Create alert if warning/danger
 Return result to mobile app
 ```
 
+A typed dish name is an additional input. It uses the same percentage, allergy, condition, decision-tree, meal-log, and alert steps. The dish table is specified in section 32. It does not replace barcode scanning.
+
 This flow must be clearly visible in the code.
 
 Do not hide the entire transaction inside one large function.
@@ -681,6 +683,8 @@ Decision Tree prediction
 
 The Decision Tree handles the remaining nutritional risk classification.
 
+`high cholesterol` is an additional hard condition. Its saturated-fat rule is specified in section 32. It does not change the decision tree, and it does not change the sodium, sugar, or calorie targets above.
+
 ---
 
 # 17. RISK REASONS
@@ -700,10 +704,26 @@ Sugar is high compared with the dependent's daily target.
 
 Calories exceed the dependent's daily target.
 
+Protein exceeds the dependent's daily target.
+
+Protein is high compared with the dependent's daily target.
+
 The product contains an ingredient associated with a recorded allergy.
 
-The product conflicts with a recorded dietary condition.
+Sodium conflicts with the recorded hypertension condition.
+
+Sugar conflicts with the recorded diabetic condition.
+
+Carbohydrate conflicts with the recorded diabetic condition.
+
+Saturated fat conflicts with the recorded high cholesterol condition.
+
+Protein conflicts with the recorded kidney disease condition.
+
+This protein check uses the non-dialysis adult limit of 1.3 g per kg of body weight per day.
 ```
+
+Each conflict sentence is added only for the rule that fired. A new scan does not use one generic condition sentence.
 
 Do not attempt to introspect the Decision Tree at request time to generate reasons.
 
@@ -843,6 +863,8 @@ The scanner must:
 
 Provide manual barcode entry as a fallback.
 
+Also provide a text field for a dish name. The only accepted names are in section 32.
+
 Do not fake scanner results.
 
 ---
@@ -875,6 +897,8 @@ Successful scan responses should follow this structure:
 ```
 
 `alert_id` is null when no alert is created.
+
+`saturated_fat_g`, `carbohydrate_g`, and `protein_g` are included only when that nutrient was checked for the dependent and is above half of its daily target. They are omitted otherwise.
 
 ---
 
@@ -1091,5 +1115,139 @@ When the final UI prompt is provided, its visual reference becomes the source of
 - empty states
 
 The final UI redesign must preserve all existing backend and mobile functionality.
+
+---
+
+# 32. HIGH CHOLESTEROL AND TYPED DISHES
+
+These additions are required. They do not replace barcode scanning, Open Food Facts, demo mode, or the local decision tree.
+
+## High cholesterol
+
+`high cholesterol` is an optional condition, stored lowercase like `hypertension` and `diabetic`.
+
+A dependent may still have no allergies and no conditions.
+
+When the dependent does not have high cholesterol:
+
+- Do not read fat or saturated fat.
+- Do not fail a scan because those values are missing.
+- Classify with calories, sodium, and sugar only, plus allergies and the existing condition rules.
+
+When the dependent has high cholesterol:
+
+- Read saturated fat in grams per 100 g.
+- Open Food Facts field: `nutriments.saturated-fat_100g`.
+- Total fat (`fat_100g`) may be shown when present. It is not the danger rule.
+- If saturated fat is missing, not a number, or negative, return `PRODUCT_DATA_INVALID`. Do not store zero.
+- Daily saturated-fat target, as a named constant documented in code:
+
+```text
+WHO: less than 10% of daily energy from saturated fat.
+grams = 0.10 * daily_calories / 9
+```
+
+Fat is 9 kcal per gram.
+
+- If saturated fat per 100 g is above half of that daily target, force `danger` before the decision tree. Use the existing 0.5 conflict threshold.
+- An allergy match still takes priority.
+- Reasons stay deterministic. When saturated fat is above half the daily target, include "Saturated fat conflicts with the recorded high cholesterol condition." Keep a saturated-fat high or exceeds sentence at 80% and 100%, in the same style as the sodium and sugar reasons.
+
+Do not add fat as a decision-tree feature. Do not retrain or replace `backend/ml/risk_model.pkl`.
+
+The dependent form must offer these checkboxes: Diabetic, Hypertension, High cholesterol, and Kidney disease. A dependent may still be saved with none of them checked.
+
+Fiber does not get a checkbox. There is no cited maximum, and a high-fiber food must not be forced to danger.
+
+## Carbohydrates, protein, and fiber
+
+Read a nutrient only when its condition is checked. If that box is unchecked, a missing value must not fail the scan and must not be stored as zero. If the box is checked and the value is missing, not a number, or negative, return `PRODUCT_DATA_INVALID`.
+
+Do not add carbohydrates, fiber, or protein as decision-tree features. Do not retrain or replace `backend/ml/risk_model.pkl`.
+
+### Carbohydrates
+
+The existing Diabetic checkbox gates total carbohydrate in addition to the existing sugar rule.
+
+- Open Food Facts field: `nutriments.carbohydrates_100g`, grams per 100 g.
+- Read it only when `diabetic` is present.
+- Daily carbohydrate target, as a named constant documented in code. Acceptable macronutrient distribution range: carbohydrate is 45–65% of calories. Use the upper end, 65%, at 4 kcal per gram:
+
+```text
+grams = 0.65 * daily_calories / 4
+```
+
+- If carbohydrate per 100 g is above half of that daily amount, force `danger` before the decision tree. Use the existing 0.5 conflict threshold. Include "Carbohydrate conflicts with the recorded diabetic condition."
+- The existing diabetic sugar rule stays. When sugar is above half the daily sugar target, include "Sugar conflicts with the recorded diabetic condition."
+
+### Protein
+
+The Kidney disease checkbox is the only condition that reads protein.
+
+- Open Food Facts field: `nutriments.proteins_100g`, grams per 100 g.
+- Read it only when `kidney disease` is present.
+- If protein is missing, not a number, or negative, return `PRODUCT_DATA_INVALID`. Do not store zero.
+- Daily protein ceiling, as a named constant documented in code. KDIGO 2024 Practice Point 3.3.1.1: avoid high protein intake above 1.3 g/kg body weight/day in adults with CKD at risk of progression. This is the high-intake ceiling, not the 0.8 g/kg/day recommended intake.
+
+```text
+grams = 1.3 * weight_kg
+```
+
+- For age 12 or older, if protein per 100 g is above half of that daily amount, force `danger` before the decision tree. Use the existing 0.5 conflict threshold. Include "Protein conflicts with the recorded kidney disease condition." and "This protein check uses the non-dialysis adult limit of 1.3 g per kg of body weight per day."
+- For age under 12, still require a valid protein value when the checkbox is on, but do not force danger and do not add a protein conflict sentence. KDIGO says not to restrict protein in children.
+- There is no dialysis flag and no stage. Do not average guideline numbers.
+- An allergy match still takes priority.
+
+The scan response keeps calories, sodium, and sugar. It also includes `saturated_fat_g`, `carbohydrate_g`, or `protein_g` only when that nutrient was checked and its percentage is above 0.5. Those fields are omitted otherwise. They are not stored as database columns. When sodium is above half the hypertension target, include "Sodium conflicts with the recorded hypertension condition."
+
+### Fiber
+
+- Open Food Facts field: `nutriments.fiber_100g`.
+- Do not read fiber for a danger rule.
+- A missing fiber value must not crash a scan.
+
+## Typed dishes
+
+The caregiver may type a dish name instead of a barcode. Match the name case-insensitively after trimming spaces. Do not use a language model to interpret it.
+
+Resolve only these two rows, copied from the FNRI food composition library (`https://i.fnri.dost.gov.ph/fct/library/search_item`). Values are per 100 g edible portion. Do not scrape that site at request time. Do not call Open Food Facts for a typed name.
+
+`spaghetti` is FNRI "Pasta, spaghetti":
+
+```text
+calories 361
+sodium_mg 6
+sugar_g 2.7
+fat_g 1.1
+saturated_fat_g 0.2
+```
+
+`adobo` is FNRI "Pork adobo, cnd":
+
+```text
+calories 277
+sodium_mg 254
+sugar_g 0.1
+fat_g 24.8
+saturated_fat_g missing
+```
+
+The dash in the FNRI saturated-fat field means missing. Do not store zero. A high-cholesterol dependent who submits `adobo` receives `PRODUCT_DATA_INVALID`. A dependent without that condition can still be classified from calories, sodium, and sugar.
+
+Any other typed name returns `PRODUCT_NOT_FOUND`.
+
+Commit the two rows in a local file. Then run the existing percentage, allergy, condition, prediction, meal-log, and alert steps.
+
+## Unchanged demo
+
+On Demo Hypertension, these barcodes stay:
+
+```text
+2000000000015 safe
+2000000000022 warning
+2000000000039 danger
+```
+
+Do not add `high cholesterol`, `diabetic`, or `kidney disease` to Demo Hypertension or Demo Diabetes. Do not add image recognition or a remote inference API.
 
 Do not rewrite working backend logic merely to change the visual design.

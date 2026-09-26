@@ -35,39 +35,91 @@ def load_model() -> None:
     _feature_order, _model = order, model
 
 
-def risk_reasons(sodium_pct, sugar_pct, calorie_pct, has_allergy_match,
-                 has_condition_conflict) -> list[str]:
-    """Describe input facts, independently of tree internals."""
+def _nutrient_reason(name, value) -> str | None:
+    if value >= 1:
+        verb = 'exceed' if name == 'Calories' else 'exceeds'
+        return f"{name} {verb} the dependent's daily target."
+    if value >= 0.8:
+        be = 'are' if name == 'Calories' else 'is'
+        return f"{name} {be} high compared with the dependent's daily target."
+    return None
+
+
+PROTEIN_LIMIT_REASON = (
+    'This protein check uses the non-dialysis adult limit of 1.3 g per kg of body weight per day.'
+)
+
+
+def _conflict_reasons(conditions, sodium_pct, sugar_pct, saturated_fat_pct, carbohydrate_pct, protein_pct) -> list[str]:
+    """One sentence per rule that fired. The generic condition sentence is not used."""
+    normalized = {str(value).strip().lower() for value in conditions or ()}
     reasons = []
-    for name, value, verb in (('Sodium', sodium_pct, 'exceeds'),
-                              ('Sugar', sugar_pct, 'exceeds'),
-                              ('Calories', calorie_pct, 'exceed')):
-        if value >= 1:
-            reasons.append(f"{name} {verb} the dependent's daily target.")
-        elif value >= 0.8:
-            be = 'are' if name == 'Calories' else 'is'
-            reasons.append(f"{name} {be} high compared with the dependent's daily target.")
-    if has_allergy_match:
-        reasons.append('The product contains an ingredient associated with a recorded allergy.')
-    if has_condition_conflict:
-        reasons.append('The product conflicts with a recorded dietary condition.')
+    if 'hypertension' in normalized and sodium_pct > CONFLICT_THRESHOLD:
+        reasons.append('Sodium conflicts with the recorded hypertension condition.')
+    if 'diabetic' in normalized and sugar_pct > CONFLICT_THRESHOLD:
+        reasons.append('Sugar conflicts with the recorded diabetic condition.')
+    if 'diabetic' in normalized and carbohydrate_pct is not None and carbohydrate_pct > CONFLICT_THRESHOLD:
+        reasons.append('Carbohydrate conflicts with the recorded diabetic condition.')
+    if ('high cholesterol' in normalized and saturated_fat_pct is not None
+            and saturated_fat_pct > CONFLICT_THRESHOLD):
+        reasons.append('Saturated fat conflicts with the recorded high cholesterol condition.')
+    if 'kidney disease' in normalized and protein_pct is not None and protein_pct > CONFLICT_THRESHOLD:
+        reasons.append('Protein conflicts with the recorded kidney disease condition.')
+        reasons.append(PROTEIN_LIMIT_REASON)
     return reasons
 
 
+def risk_reasons(sodium_pct, sugar_pct, calorie_pct, has_allergy_match,
+                 has_condition_conflict, saturated_fat_pct=None, carbohydrate_pct=None,
+                 protein_pct=None, conditions=()) -> list[str]:
+    """Describe input facts, independently of tree internals."""
+    reasons = []
+    for name, value in (('Sodium', sodium_pct), ('Sugar', sugar_pct), ('Calories', calorie_pct)):
+        reason = _nutrient_reason(name, value)
+        if reason:
+            reasons.append(reason)
+    for name, value in (('Saturated fat', saturated_fat_pct), ('Carbohydrate', carbohydrate_pct),
+                        ('Protein', protein_pct)):
+        if value is None:
+            continue
+        reason = _nutrient_reason(name, value)
+        if reason:
+            reasons.append(reason)
+    if has_allergy_match:
+        reasons.append('The product contains an ingredient associated with a recorded allergy.')
+    reasons.extend(_conflict_reasons(
+        conditions, sodium_pct, sugar_pct, saturated_fat_pct, carbohydrate_pct, protein_pct))
+    return reasons
+
+
+def _optional_pct(value) -> bool:
+    return value is None or (
+        not isinstance(value, bool) and isinstance(value, (int, float))
+        and math.isfinite(value) and value >= 0)
+
+
 def predict_risk(sodium_pct, sugar_pct, calorie_pct, has_allergy_match,
-                 has_condition_conflict, age_band) -> dict:
+                 has_condition_conflict, age_band, saturated_fat_pct=None,
+                 carbohydrate_pct=None, protein_pct=None, conditions=()) -> dict:
     values = (sodium_pct, sugar_pct, calorie_pct)
     if (any(isinstance(value, bool) or not isinstance(value, (int, float))
             or not math.isfinite(value) or value < 0 for value in values)
             or has_allergy_match not in (0, 1) or has_condition_conflict not in (0, 1)
-            or age_band not in AGE_BANDS):
+            or age_band not in AGE_BANDS
+            or not _optional_pct(saturated_fat_pct) or not _optional_pct(carbohydrate_pct)
+            or not _optional_pct(protein_pct)):
         raise ApiError(422, 'VALIDATION_ERROR', 'Risk prediction inputs are invalid.')
-    reasons = risk_reasons(*values, has_allergy_match, has_condition_conflict)
+    reasons = risk_reasons(*values, has_allergy_match, has_condition_conflict,
+                           saturated_fat_pct, carbohydrate_pct, protein_pct, conditions)
+    fat_conflict = saturated_fat_pct is not None and saturated_fat_pct > CONFLICT_THRESHOLD
+    carb_conflict = carbohydrate_pct is not None and carbohydrate_pct > CONFLICT_THRESHOLD
+    protein_conflict = protein_pct is not None and protein_pct > CONFLICT_THRESHOLD
     # Hard safety rules take priority, even if the tree would predict safe.
     if has_allergy_match:
         label = 'danger'
     elif has_condition_conflict and (sodium_pct > CONFLICT_THRESHOLD
-                                    or sugar_pct > CONFLICT_THRESHOLD):
+                                    or sugar_pct > CONFLICT_THRESHOLD
+                                    or fat_conflict or carb_conflict or protein_conflict):
         label = 'danger'
     else:
         if _model is None:

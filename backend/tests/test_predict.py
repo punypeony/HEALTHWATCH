@@ -41,6 +41,31 @@ def test_hard_rules_never_call_tree(monkeypatch, ratios, allergy, conflict):
     model.predict.assert_not_called()
 
 
+def test_carbohydrate_conflict_skips_tree(monkeypatch):
+    model = Mock()
+    model.predict.return_value = ['safe']
+    monkeypatch.setattr(predict, '_model', model)
+    result = predict.predict_risk(.1, .1, .1, 0, 1, 'adult', carbohydrate_pct=0.85, conditions=['diabetic'])
+    assert result['risk_label'] == 'danger'
+    assert 'Carbohydrate conflicts with the recorded diabetic condition.' in result['reasons']
+    assert 'The product conflicts with a recorded dietary condition.' not in result['reasons']
+    assert any(reason.startswith('Carbohydrate') for reason in result['reasons'])
+    model.predict.assert_not_called()
+
+
+def test_cholesterol_conflict_skips_tree(monkeypatch):
+    model = Mock()
+    model.predict.return_value = ['safe']
+    monkeypatch.setattr(predict, '_model', model)
+    result = predict.predict_risk(.1, .1, .1, 0, 1, 'adult', saturated_fat_pct=0.85,
+                                  conditions=['high cholesterol'])
+    assert result['risk_label'] == 'danger'
+    assert 'Saturated fat conflicts with the recorded high cholesterol condition.' in result['reasons']
+    assert 'The product conflicts with a recorded dietary condition.' not in result['reasons']
+    assert any(reason.startswith('Saturated fat') for reason in result['reasons'])
+    model.predict.assert_not_called()
+
+
 @pytest.mark.parametrize('band', predict.AGE_BANDS)
 def test_exact_saved_order_and_condition_boundary(monkeypatch, band):
     model = Mock()
@@ -62,13 +87,32 @@ def test_deterministic_threshold_reasons():
         "Sugar is high compared with the dependent's daily target.",
         "Calories exceed the dependent's daily target.",
         'The product contains an ingredient associated with a recorded allergy.',
-        'The product conflicts with a recorded dietary condition.',
     ]
     assert predict.risk_reasons(.8, 1, .8, 0, 0) == [
         "Sodium is high compared with the dependent's daily target.",
         "Sugar exceeds the dependent's daily target.",
         "Calories are high compared with the dependent's daily target.",
     ]
+
+
+def test_each_condition_sentence_names_only_its_rule():
+    generic = 'The product conflicts with a recorded dietary condition.'
+    sodium = predict.risk_reasons(0.6, 0.6, 0.1, 0, 1, conditions=['hypertension'])
+    assert sodium == ['Sodium conflicts with the recorded hypertension condition.']
+    sugar = predict.risk_reasons(0.6, 0.6, 0.1, 0, 1, conditions=['diabetic'])
+    assert sugar == ['Sugar conflicts with the recorded diabetic condition.']
+    carbohydrate = predict.risk_reasons(0.6, 0.1, 0.1, 0, 1, carbohydrate_pct=0.6, conditions=['diabetic'])
+    assert carbohydrate == ['Carbohydrate conflicts with the recorded diabetic condition.']
+    fat = predict.risk_reasons(0.6, 0.6, 0.1, 0, 1, saturated_fat_pct=0.6, conditions=['high cholesterol'])
+    assert fat == ['Saturated fat conflicts with the recorded high cholesterol condition.']
+    protein = predict.risk_reasons(0.1, 0.1, 0.1, 0, 1, protein_pct=0.85, conditions=['kidney disease'])
+    assert "Protein is high compared with the dependent's daily target." in protein
+    assert 'Protein conflicts with the recorded kidney disease condition.' in protein
+    assert predict.PROTEIN_LIMIT_REASON in protein
+    exceeds = predict.risk_reasons(0.1, 0.1, 0.1, 0, 1, protein_pct=1, conditions=['kidney disease'])
+    assert "Protein exceeds the dependent's daily target." in exceeds
+    for reasons in (sodium, sugar, carbohydrate, fat, protein, exceeds):
+        assert generic not in reasons
 
 
 @pytest.mark.parametrize('args', [(-1, 0, 0, 0, 0, 'adult'),

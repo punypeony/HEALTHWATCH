@@ -11,7 +11,12 @@ import { errorMessage } from "../utils/errors";
 
 type Props = NativeStackScreenProps<AppStackParamList, "DependentForm">;
 
-const TRACKED_CONDITIONS = new Set(["diabetic", "hypertension"]);
+const TRACKED_CONDITIONS = new Set([
+  "diabetic",
+  "hypertension",
+  "high cholesterol",
+  "kidney disease",
+]);
 
 function parseAge(value: string): number | null {
   const trimmed = value.trim();
@@ -57,6 +62,8 @@ export function DependentFormScreen({ navigation, route }: Props) {
   const [allergyDraft, setAllergyDraft] = useState("");
   const [diabetic, setDiabetic] = useState(false);
   const [hypertension, setHypertension] = useState(false);
+  const [highCholesterol, setHighCholesterol] = useState(false);
+  const [kidneyDisease, setKidneyDisease] = useState(false);
   const [extraConditions, setExtraConditions] = useState<string[]>([]);
   const [profile, setProfile] = useState<DietaryProfile | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -84,6 +91,8 @@ export function DependentFormScreen({ navigation, route }: Props) {
         setAllergies(dependent.dietary_profile.allergies);
         setDiabetic(hasCondition(conditions, "diabetic"));
         setHypertension(hasCondition(conditions, "hypertension"));
+        setHighCholesterol(hasCondition(conditions, "high cholesterol"));
+        setKidneyDisease(hasCondition(conditions, "kidney disease"));
         setExtraConditions(
           conditions.filter((condition) => !TRACKED_CONDITIONS.has(condition.toLowerCase())),
         );
@@ -163,6 +172,8 @@ export function DependentFormScreen({ navigation, route }: Props) {
         ...extraConditions,
         ...(diabetic ? ["diabetic"] : []),
         ...(hypertension ? ["hypertension"] : []),
+        ...(highCholesterol ? ["high cholesterol"] : []),
+        ...(kidneyDisease ? ["kidney disease"] : []),
       ],
     };
 
@@ -260,6 +271,12 @@ export function DependentFormScreen({ navigation, route }: Props) {
       </Pressable>
       <Pressable onPress={() => setHypertension((value) => !value)} style={placeholder.button}>
         <Text>{hypertension ? "[x]" : "[ ]"} Hypertension</Text>
+      </Pressable>
+      <Pressable onPress={() => setHighCholesterol((value) => !value)} style={placeholder.button}>
+        <Text>{highCholesterol ? "[x]" : "[ ]"} High cholesterol</Text>
+      </Pressable>
+      <Pressable onPress={() => setKidneyDisease((value) => !value)} style={placeholder.button}>
+        <Text>{kidneyDisease ? "[x]" : "[ ]"} Kidney disease</Text>
       </Pressable>
       {extraConditions.length > 0 ? (
         <Text>Other recorded conditions: {extraConditions.join(", ")}</Text>

@@ -158,8 +158,18 @@ def test_per_100g_kj_preferred_over_serving_kcal():
     assert lookup.normalize_product(BARCODE, payload)['calories'] == 100
 
 
+def test_milliliter_serving_uses_existing_per_100g_values():
+    payload = deepcopy(PAYLOAD)
+    payload['product']['serving_size'] = '295 ml'
+    payload['product']['nutrition_data_per'] = '100g'
+    result = lookup.normalize_product(BARCODE, payload)
+    assert result['calories'] == 250
+    assert result['sodium_mg'] == 650
+    assert result['sugar_g'] == 12
+
+
 @pytest.mark.parametrize('change', [
-    {'nutrition_data_per': '100ml'}, {'serving_size': '250 ml'},
+    {'nutrition_data_per': '100ml'}, {'nutrition_data_per': '100 ml'},
     {'product_name': ''}, {'nutriments': []}, {'unused': float('nan')},
     {'unused': '\x00'},
 ])
@@ -168,6 +178,64 @@ def test_unreliable_response_data(change):
     payload['product'].update(change)
     with pytest.raises(ApiError) as error: lookup.normalize_product(BARCODE, payload)
     assert error.value.code == 'PRODUCT_DATA_INVALID'
+
+
+def test_prepared_per_100g_supplies_missing_nutrients():
+    product = {'product_name': 'lm pc sweet & spicy 80g', 'nutrition_data_per': 'serving',
+               'nutrition_data_prepared_per': '100g', 'serving_size': '80 g',
+               'nutriments': {'energy-kcal_prepared_100g': 450, 'sodium_prepared_100g': 1.125,
+                              'sugars_prepared_100g': 8.75, 'vitamin-c_prepared_100g': 0}}
+    result = lookup.normalize_product(BARCODE, {'status': 1, 'product': product})
+    assert result['calories'] == 450
+    assert result['sodium_mg'] == Decimal('1125.00')
+    assert result['sugar_g'] == Decimal('8.75')
+
+
+def test_prepared_energy_kilojoules_convert_to_kcal():
+    product = {'product_name': 'Prepared kJ', 'nutrition_data_prepared_per': '100 g',
+               'nutriments': {'energy_prepared_100g': 418.4, 'sodium_prepared_100g': 0.1,
+                              'sugars_prepared_100g': 1}}
+    assert lookup.normalize_product(BARCODE, {'status': 1, 'product': product})['calories'] == 100
+
+
+def test_existing_per_100g_wins_over_prepared():
+    payload = deepcopy(PAYLOAD)
+    payload['product']['nutrition_data_prepared_per'] = '100g'
+    payload['product']['nutriments'].update({
+        'energy-kcal_prepared_100g': 999, 'sodium_prepared_100g': 9, 'sugars_prepared_100g': 9})
+    result = lookup.normalize_product(BARCODE, payload)
+    assert result['calories'] == 250 and result['sodium_mg'] == 650 and result['sugar_g'] == 12
+
+
+@pytest.mark.parametrize('basis', ['100ml', '100 ml'])
+def test_prepared_milliliters_are_not_grams(basis):
+    product = {'product_name': 'Prepared Volume', 'nutrition_data_prepared_per': basis,
+               'nutriments': {'energy-kcal_prepared_100g': 450, 'sodium_prepared_100g': 1.125,
+                              'sugars_prepared_100g': 8.75}}
+    with pytest.raises(ApiError) as error:
+        lookup.normalize_product(BARCODE, {'status': 1, 'product': product})
+    assert error.value.code == 'PRODUCT_DATA_INVALID'
+
+
+def test_prepared_serving_is_not_scaled():
+    product = {'product_name': 'Prepared Serving', 'nutrition_data_prepared_per': '100g',
+               'serving_size': '80 g',
+               'nutriments': {'energy-kcal_prepared_serving': 360, 'sodium_prepared_serving': 0.9,
+                              'sugars_prepared_serving': 7}}
+    with pytest.raises(ApiError) as error:
+        lookup.normalize_product(BARCODE, {'status': 1, 'product': product})
+    assert error.value.code == 'PRODUCT_DATA_INVALID'
+
+
+def test_missing_prepared_value_is_not_stored_as_zero(cache, offline):
+    product = {'product_name': 'Incomplete Prepared', 'nutrition_data_prepared_per': '100g',
+               'nutriments': {'energy-kcal_prepared_100g': 450, 'sodium_prepared_100g': 1.125}}
+    offline.side_effect = None
+    offline.return_value = response({'status': 1, 'product': product})
+    with pytest.raises(ApiError) as error:
+        lookup.fetch_product(BARCODE)
+    assert error.value.code == 'PRODUCT_DATA_INVALID'
+    assert cache.scalar(select(func.count()).select_from(ScannedProduct)) == 0
 
 
 def test_database_failure_is_controlled(monkeypatch):

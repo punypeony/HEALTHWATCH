@@ -1,6 +1,6 @@
 from decimal import Decimal
 import pytest
-from app.targets import compute_daily_targets
+from app.targets import compute_daily_targets, daily_protein_g
 
 
 def test_adult_equation_and_condition_adjustments():
@@ -58,3 +58,10 @@ def test_condition_reductions_against_same_person_without_conditions():
     assert diabetic['daily_sugar_g'] == child['daily_sugar_g'] / 2
     assert diabetic['daily_calories'] == child['daily_calories']
     assert diabetic['daily_sodium_mg'] == child['daily_sodium_mg']
+
+
+def test_daily_protein_uses_kdigo_ceiling():
+    assert daily_protein_g(70) == Decimal('91.0')
+    assert daily_protein_g(Decimal('70')) == Decimal('1.3') * 70
+    with pytest.raises(ValueError):
+        daily_protein_g(0)

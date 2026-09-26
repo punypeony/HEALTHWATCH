@@ -87,9 +87,9 @@ Expected risk: **danger**
 Expected reasons:
 
 - `Sodium exceeds the dependent's daily target.`
-- `The product conflicts with a recorded dietary condition.`
+- `Sodium conflicts with the recorded hypertension condition.`
 
-Sodium is above the daily target and above half of it, and the dependent has hypertension. That condition rule forces danger before the decision tree runs.
+Sodium is above the daily target and above half of it, and the dependent has hypertension. That condition rule forces danger before the decision tree runs. The reason names sodium and hypertension.
 
 Expected alert: one active alert containing both sentences.
 

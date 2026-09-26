@@ -117,6 +117,9 @@ export type ScanResult = {
   reasons: string[];
   meal_log_id: number;
   alert_id: number | null;
+  saturated_fat_g?: number | null;
+  carbohydrate_g?: number | null;
+  protein_g?: number | null;
 };
 
 export type AuthStackParamList = {

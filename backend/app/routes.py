@@ -10,7 +10,10 @@ from app.dependents import create_dependent, owned_alert, owned_dependent, updat
 from app.food_lookup import fetch_product
 from app.ml.predict import predict_risk
 from app.scan import (validate_scan_input, calculate_product_percentages, check_allergy_match,
-                      check_condition_conflict, age_band_for, store_scan_product, create_meal_log,
+                      check_condition_conflict, has_high_cholesterol, has_condition,
+                      saturated_fat_per_100g, saturated_fat_percentage, carbohydrate_per_100g,
+                      carbohydrate_percentage, require_protein_per_100g, protein_percentage,
+                      reported_grams, age_band_for, store_scan_product, create_meal_log,
                       create_alert_if_needed, return_scan_result)
 from app.models import Alert, Dependent, MealLog
 from app.schemas import (AlertOutput, AlertPatch, DependentCreate, DependentOutput,
@@ -102,17 +105,38 @@ def scan_product(id: RecordId, data: ScanInput, session: DbSession, user: Curren
     product = fetch_product(barcode)
     profile = dependent.dietary_profile
     percentages = calculate_product_percentages(product, profile)
-    allergy = check_allergy_match(profile.allergies, product['raw_response'])
-    conflict = check_condition_conflict(profile.conditions, percentages)
+    raw = product['raw_response']
+    protein_grams = None
+    protein_pct = None
+    if has_condition(profile.conditions, 'kidney disease'):
+        protein_grams = require_protein_per_100g(raw)
+        if dependent.age >= 12:
+            protein_pct = protein_percentage(raw, dependent.weight_kg)
+    saturated_fat_grams = saturated_fat_per_100g(raw) if has_high_cholesterol(profile.conditions) else None
+    saturated_fat_pct = (saturated_fat_percentage(raw, profile)
+                         if saturated_fat_grams is not None else None)
+    carbohydrate_grams = (carbohydrate_per_100g(raw)
+                          if has_condition(profile.conditions, 'diabetic') else None)
+    carbohydrate_pct = (carbohydrate_percentage(raw, profile)
+                        if carbohydrate_grams is not None else None)
+    allergy = check_allergy_match(profile.allergies, raw)
+    conflict = check_condition_conflict(profile.conditions, percentages, saturated_fat_pct,
+                                        carbohydrate_pct, protein_pct)
     prediction = predict_risk(**percentages, has_allergy_match=allergy,
-                              has_condition_conflict=conflict, age_band=age_band_for(dependent.age))
+                              has_condition_conflict=conflict, age_band=age_band_for(dependent.age),
+                              saturated_fat_pct=saturated_fat_pct, carbohydrate_pct=carbohydrate_pct,
+                              protein_pct=protein_pct, conditions=profile.conditions)
     # Auth/ownership reads already began this session's transaction. All scan
     # writes share its single commit; a failed flush/commit rolls back every write.
     try:
         stored_product = store_scan_product(session, product)
         meal = create_meal_log(session, dependent.id, stored_product.id, prediction)
         alert = create_alert_if_needed(session, meal)
-        result = return_scan_result(product, percentages, prediction, meal, alert)
+        result = return_scan_result(
+            product, percentages, prediction, meal, alert,
+            saturated_fat_g=reported_grams(saturated_fat_grams, saturated_fat_pct),
+            carbohydrate_g=reported_grams(carbohydrate_grams, carbohydrate_pct),
+            protein_g=reported_grams(protein_grams, protein_pct))
         session.commit()
     except Exception:
         session.rollback()

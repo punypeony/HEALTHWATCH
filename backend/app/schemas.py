@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_serializer, model_validator
 
 Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200, pattern=r'^[^\x00]+$')]
 Label = Annotated[str, StringConstraints(strip_whitespace=True, to_lower=True, min_length=1, max_length=100, pattern=r'^[^\x00]+$')]
@@ -176,3 +176,14 @@ class ScanOutput(BaseModel):
     reasons: list[str]
     meal_log_id: int
     alert_id: int | None
+    saturated_fat_g: float | None = None
+    carbohydrate_g: float | None = None
+    protein_g: float | None = None
+
+    @model_serializer(mode='wrap')
+    def _omit_unused_grams(self, handler):
+        data = handler(self)
+        for key in ('saturated_fat_g', 'carbohydrate_g', 'protein_g'):
+            if data.get(key) is None:
+                data.pop(key, None)
+        return data

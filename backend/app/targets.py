@@ -30,6 +30,19 @@ HYPERTENSION_FACTOR = Decimal('0.7')
 DIABETIC_FACTOR = Decimal('0.5')
 FREE_SUGAR_ENERGY_FRACTION = Decimal('0.10')
 SUGAR_KCAL_PER_GRAM = Decimal('4')
+# National Academies DRI: acceptable macronutrient distribution range for
+# carbohydrate is 45–65% of energy. This project uses the upper bound.
+# https://nap.nationalacademies.org/catalog/10490
+CARBOHYDRATE_ENERGY_FRACTION = Decimal('0.65')
+# WHO healthy diet: less than 10% of total energy from saturated fatty acids.
+# https://www.who.int/news-room/fact-sheets/detail/healthy-diet
+SATURATED_FAT_ENERGY_FRACTION = Decimal('0.10')
+FAT_KCAL_PER_GRAM = Decimal('9')
+# KDIGO 2024 CKD Guideline, Practice Point 3.3.1.1: avoid high protein intake
+# above 1.3 g/kg body weight/day in adults with CKD at risk of progression.
+# This is the high-intake ceiling, not the 0.8 g/kg/day recommended intake.
+# https://kdigo.org/wp-content/uploads/2024/03/KDIGO-2024-CKD-Guideline.pdf
+PROTEIN_G_PER_KG = Decimal('1.3')
 
 
 def compute_daily_targets(
@@ -78,3 +91,39 @@ def compute_daily_targets(
     if any(value <= 0 for value in targets.values()):
         raise ValueError('Physical measurements produce non-positive targets.')
     return targets
+
+
+def daily_saturated_fat_g(daily_calories: Decimal | float | int) -> Decimal:
+    """Grams of saturated fat at 10% of daily calories. Not stored on the profile."""
+    calories = Decimal(str(daily_calories))
+    if not calories.is_finite() or calories <= 0:
+        raise ValueError('Daily calories must be positive and finite.')
+    grams = calories * SATURATED_FAT_ENERGY_FRACTION / FAT_KCAL_PER_GRAM
+    if grams <= 0:
+        raise ValueError('Saturated-fat target must be positive.')
+    return grams
+
+
+def daily_carbohydrate_g(daily_calories: Decimal | float | int) -> Decimal:
+    """Grams of carbohydrate at 65% of daily calories. Not stored on the profile."""
+    calories = Decimal(str(daily_calories))
+    if not calories.is_finite() or calories <= 0:
+        raise ValueError('Daily calories must be positive and finite.')
+    grams = calories * CARBOHYDRATE_ENERGY_FRACTION / SUGAR_KCAL_PER_GRAM
+    if grams <= 0:
+        raise ValueError('Carbohydrate target must be positive.')
+    return grams
+
+
+def daily_protein_g(weight_kg: Decimal | float | int) -> Decimal:
+    """Adult non-dialysis protein ceiling: 1.3 g per kg of body weight.
+
+    Callers do not apply this as a danger rule for age under 12.
+    """
+    weight = Decimal(str(weight_kg))
+    if not weight.is_finite() or weight <= 0:
+        raise ValueError('Weight must be positive and finite.')
+    grams = weight * PROTEIN_G_PER_KG
+    if grams <= 0:
+        raise ValueError('Protein target must be positive.')
+    return grams

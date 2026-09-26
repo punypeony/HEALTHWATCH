@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.models import MealLog, Summary
 
 WINDOW = text("interval '7 days'")
-TOPICS = ('sodium', 'sugar', 'calorie', 'allergy', 'condition')
+TOPICS = ('sodium', 'sugar', 'calorie', 'allergy', 'saturated', 'carbohydrate', 'protein', 'condition')
 
 
 def week_window_start(session: Session) -> date:

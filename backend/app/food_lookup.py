@@ -58,6 +58,14 @@ def serving_grams(product: dict) -> Decimal:
     return grams
 
 
+def prepared_basis_is_100g(product: dict) -> bool:
+    """Prepared Open Food Facts values are usable only when already per 100 g."""
+    if not isinstance(product, dict):
+        return False
+    basis = str(product.get('nutrition_data_prepared_per') or '').replace(' ', '').lower()
+    return basis == '100g'
+
+
 def nutrient_per_100g(product: dict, nutrient: str) -> Decimal:
     nutrients = product['nutriments']
     # OFF normalized nutrient keys are grams (energy-kcal is kcal, energy is kJ),
@@ -65,6 +73,9 @@ def nutrient_per_100g(product: dict, nutrient: str) -> Decimal:
     key = nutrient + '_100g'
     if key in nutrients and nutrients[key] is not None:
         return nutrition_number(nutrients[key])
+    prepared_key = nutrient + '_prepared_100g'
+    if prepared_basis_is_100g(product) and prepared_key in nutrients and nutrients[prepared_key] is not None:
+        return nutrition_number(nutrients[prepared_key])
     value = nutrition_number(nutrients.get(nutrient + '_serving'))
     try:
         return value * 100 / serving_grams(product)
@@ -90,17 +101,20 @@ def normalize_product(barcode: str, payload: dict) -> dict:
     name = product.get('product_name') or product.get('product_name_en')
     if not isinstance(name, str) or not name.strip() or '\x00' in name:
         raise ApiError(422, 'PRODUCT_DATA_INVALID', 'Product name is missing or invalid.')
-    # Do not assume a liquid density of 1g/ml. Ambiguous volume-based entries
-    # need a separate density-aware implementation before they can be used.
-    if (product.get('nutrition_data_per') in ('100ml', '100 ml')
-            or re.search(r'\bml\b', str(product.get('serving_size', '')), re.IGNORECASE)):
+    # A milliliter serving is fine when the nutrients we use are already per 100g.
+    # Per-100ml labels are not converted: that would assume a density of 1 g/ml.
+    basis = str(product.get('nutrition_data_per') or '').replace(' ', '').lower()
+    if basis == '100ml':
         raise ApiError(422, 'PRODUCT_DATA_INVALID', 'Volume-based nutrition cannot be converted to grams reliably.')
     nutrients = product['nutriments']
-    # Prefer per-100g kJ over per-serving kcal when only the former is available.
-    energy_key = next((key for key, suffix in (
-        ('energy-kcal', '_100g'), ('energy', '_100g'),
-        ('energy-kcal', '_serving'), ('energy', '_serving')
-    ) if nutrients.get(key + suffix) is not None), 'energy-kcal')
+    # Prefer as-sold per 100 g, then prepared per 100 g, then a gram serving.
+    # Prepared keys are ignored unless that basis is exactly 100 g.
+    energy_candidates = [('energy-kcal', '_100g'), ('energy', '_100g')]
+    if prepared_basis_is_100g(product):
+        energy_candidates.extend([('energy-kcal', '_prepared_100g'), ('energy', '_prepared_100g')])
+    energy_candidates.extend([('energy-kcal', '_serving'), ('energy', '_serving')])
+    energy_key = next((key for key, suffix in energy_candidates
+                       if nutrients.get(key + suffix) is not None), 'energy-kcal')
     calories = nutrient_per_100g(product, energy_key)
     if energy_key == 'energy':
         calories /= Decimal('4.184')

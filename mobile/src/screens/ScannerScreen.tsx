@@ -123,6 +123,9 @@ export function ScannerScreen({ route }: Props) {
         <Text>Calories: {result.product.calories}</Text>
         <Text>Sodium: {result.product.sodium_mg} mg</Text>
         <Text>Sugar: {result.product.sugar_g} g</Text>
+        {result.saturated_fat_g != null ? <Text>Saturated fat: {result.saturated_fat_g} g</Text> : null}
+        {result.carbohydrate_g != null ? <Text>Carbohydrate: {result.carbohydrate_g} g</Text> : null}
+        {result.protein_g != null ? <Text>Protein: {result.protein_g} g</Text> : null}
         {result.reasons.map((reason, index) => (
           <Text key={`${result.meal_log_id}-${index}`}>{reason}</Text>
         ))}
