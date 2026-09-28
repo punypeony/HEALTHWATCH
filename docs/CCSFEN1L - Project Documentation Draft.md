@@ -155,7 +155,7 @@ To design and develop a mobile application that helps caregivers manage multiple
 
 *Include the appropriate UML diagrams required for the project.*
 
-The diagrams below match the running routes. The same figures are maintained in [diagrams.md](diagrams.md). There is no class diagram in the repository.
+The diagrams below match the running routes. The maintained copies, including the class, state, and component diagrams, are in [diagrams.md](diagrams.md).
 
 **6.1 Use Case Diagram**
 
@@ -200,7 +200,7 @@ An allergy match, or a condition conflict above half the matching target, is dan
 
 **6.3 Class Diagram**
 
-No class diagram has been drawn for this repository. The request and table models are `backend/app/schemas.py` and `backend/app/models.py`.
+The class diagram is in [diagrams.md](diagrams.md). It shows `User`, `Dependent`, `DietaryProfile`, `ScannedProduct`, `MealLog`, `Alert`, and `Summary` from `backend/app/models.py`. Request bodies stay in `backend/app/schemas.py`.
 
 **6.4 Sequence Diagram**
 
