@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { AlertsScreen } from "../screens/AlertsScreen";
 import { HistoryScreen } from "../screens/HistoryScreen";
 import { ScannerScreen } from "../screens/ScannerScreen";
+import { IntakeScreen } from "../screens/IntakeScreen";
 import { SummaryScreen } from "../screens/SummaryScreen";
 import type { AppStackParamList, DependentTabParamList } from "../types";
 
@@ -28,6 +29,7 @@ export function DependentTabs({ route }: Props) {
         initialParams={{ dependentId }}
       />
       <Tab.Screen name="Summary" component={SummaryScreen} initialParams={{ dependentId }} />
+      <Tab.Screen name="Intake" component={IntakeScreen} initialParams={{ dependentId }} />
     </Tab.Navigator>
   );
 }

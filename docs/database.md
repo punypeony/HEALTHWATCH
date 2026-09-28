@@ -12,9 +12,10 @@ pytest
 ```
 
 `init_db.py` uses SQLAlchemy `Base.metadata.create_all`: it creates missing tables
-without deleting records, and can be repeated. It does **not** alter existing
-columns or constraints; future schema changes need explicit SQL changes or a
-migration plan. No Alembic is needed for this initial schema.
+without deleting records, and can be repeated. It also adds `meal_logs.eaten`
+and `meal_logs.grams_eaten` when those columns are missing, plus the check that
+an eaten meal has grams greater than zero. It does not rebuild other existing
+columns. No Alembic is used.
 
 The seed creates `demo@foodmonitor.local` with development password
 `DemoCaregiver123!`. Only a randomly salted PBKDF2-SHA256 hash is stored, using

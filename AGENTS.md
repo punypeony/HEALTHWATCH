@@ -323,7 +323,11 @@ Use JSONB for raw_response.
 - scanned_product_id
 - risk_label
 - risk_reasons
+- eaten
+- grams_eaten
 - created_at
+
+`eaten` starts false and `grams_eaten` stays null until the caregiver confirms an amount. Daily intake sums only meals with `eaten` true and `grams_eaten` greater than zero, scaled from per-100 g values. The weekly summary still counts every scan.
 
 Risk labels:
 

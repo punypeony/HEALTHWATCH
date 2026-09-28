@@ -3,7 +3,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { ApiError, scanDependent } from "../api";
+import { ApiError, markMealEaten, scanDependent } from "../api";
 import { Field } from "../components/Field";
 import { ScreenStatus } from "../components/ScreenStatus";
 import { placeholder } from "../theme/placeholder";
@@ -64,6 +64,9 @@ export function ScannerScreen({ route }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
   const [phase, setPhase] = useState<ScanPhase>({ kind: "scan" });
   const [draft, setDraft] = useState("");
+  const [askingEaten, setAskingEaten] = useState(false);
+  const [gramsDraft, setGramsDraft] = useState("");
+  const [eatenNote, setEatenNote] = useState<string | null>(null);
   const lastScanAt = useRef(0);
   const busy = useRef(false);
 
@@ -85,6 +88,9 @@ export function ScannerScreen({ route }: Props) {
     setPhase({ kind: "loading", barcode });
     try {
       const result = await scanDependent(dependentId, barcode);
+      setAskingEaten(false);
+      setEatenNote(null);
+      setGramsDraft(result.serving_grams != null ? String(result.serving_grams) : "");
       setPhase({ kind: "result", result });
     } catch (error) {
       setPhase(failurePhase(error, barcode));
@@ -95,7 +101,25 @@ export function ScannerScreen({ route }: Props) {
 
   function scanAgain() {
     setDraft("");
+    setAskingEaten(false);
+    setEatenNote(null);
     setPhase({ kind: "scan" });
+  }
+
+  async function confirmEaten(mealId: number) {
+    const grams = Number(gramsDraft);
+    if (!gramsDraft.trim() || Number.isNaN(grams) || grams <= 0) {
+      setEatenNote("Enter the grams eaten. The amount must be greater than zero.");
+      return;
+    }
+    setEatenNote(null);
+    try {
+      await markMealEaten(mealId, grams);
+      setAskingEaten(false);
+      setEatenNote("Recorded as eaten.");
+    } catch (error) {
+      setEatenNote(errorMessage(error));
+    }
   }
 
   if (!permission) {
@@ -115,7 +139,7 @@ export function ScannerScreen({ route }: Props) {
   if (phase.kind === "result") {
     const { result } = phase;
     return (
-      <ScrollView contentContainerStyle={placeholder.screen}>
+      <ScrollView contentContainerStyle={placeholder.screen} keyboardShouldPersistTaps="handled">
         <Text style={[styles.risk, { color: RISK_COLOR[result.risk_label] }]}>
           {result.risk_label.toUpperCase()}
         </Text>
@@ -129,6 +153,35 @@ export function ScannerScreen({ route }: Props) {
         {result.reasons.map((reason, index) => (
           <Text key={`${result.meal_log_id}-${index}`}>{reason}</Text>
         ))}
+        {askingEaten ? (
+          <Field
+            label="How many grams were eaten?"
+            value={gramsDraft}
+            onChangeText={setGramsDraft}
+            keyboardType="decimal-pad"
+          />
+        ) : null}
+        {eatenNote ? <Text>{eatenNote}</Text> : null}
+        {askingEaten ? (
+          <Pressable
+            onPress={() => {
+              void confirmEaten(result.meal_log_id);
+            }}
+            style={placeholder.button}
+          >
+            <Text>Confirm</Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={() => {
+              setAskingEaten(true);
+              setEatenNote(null);
+            }}
+            style={placeholder.button}
+          >
+            <Text>Eaten</Text>
+          </Pressable>
+        )}
         <Pressable onPress={scanAgain} style={placeholder.button}>
           <Text>Scan again</Text>
         </Pressable>

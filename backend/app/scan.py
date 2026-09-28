@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 
 from app.errors import ApiError
-from app.food_lookup import nutrition_number, prepared_basis_is_100g, validate_barcode
+from app.food_lookup import nutrition_number, prepared_basis_is_100g, serving_grams, validate_barcode
 from app.ml.predict import CONFLICT_THRESHOLD
 from app.targets import daily_carbohydrate_g, daily_protein_g, daily_saturated_fat_g
 from app.models import Alert, MealLog, ScannedProduct
@@ -156,9 +156,21 @@ def store_scan_product(session, product) -> ScannedProduct:
     return cached
 
 
+def optional_serving_grams(raw_response) -> float | None:
+    """Prefill only an explicit gram serving. Milliliters and missing sizes stay blank."""
+    product = raw_response.get('product') if isinstance(raw_response, dict) else None
+    if not isinstance(product, dict):
+        return None
+    try:
+        return float(serving_grams(product))
+    except ApiError:
+        return None
+
+
 def create_meal_log(session, dependent_id, product_id, prediction) -> MealLog:
     meal = MealLog(dependent_id=dependent_id, scanned_product_id=product_id,
-                   risk_label=prediction['risk_label'], risk_reasons=prediction['reasons'])
+                   risk_label=prediction['risk_label'], risk_reasons=prediction['reasons'],
+                   eaten=False, grams_eaten=None)
     session.add(meal)
     session.flush()
     return meal
@@ -183,4 +195,5 @@ def return_scan_result(product, percentages, prediction, meal, alert,
                       percentages=percentages, meal_log_id=meal.id,
                       alert_id=alert.id if alert else None,
                       saturated_fat_g=saturated_fat_g, carbohydrate_g=carbohydrate_g,
-                      protein_g=protein_g)
+                      protein_g=protein_g,
+                      serving_grams=optional_serving_grams(product.get('raw_response')))

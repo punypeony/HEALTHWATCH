@@ -1,12 +1,14 @@
 """HTTP endpoints for accounts and caregiver-owned resources."""
+from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Path, Response
+from fastapi import APIRouter, Path, Query, Response
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.auth import (CurrentUser, DbSession, authenticate_user, create_access_token, register_user)
-from app.dependents import create_dependent, owned_alert, owned_dependent, update_dependent
+from app.dependents import create_dependent, owned_alert, owned_dependent, owned_meal, update_dependent
+from app.intake import daily_intake
 from app.food_lookup import fetch_product
 from app.ml.predict import predict_risk
 from app.scan import (validate_scan_input, calculate_product_percentages, check_allergy_match,
@@ -16,9 +18,9 @@ from app.scan import (validate_scan_input, calculate_product_percentages, check_
                       reported_grams, age_band_for, store_scan_product, create_meal_log,
                       create_alert_if_needed, return_scan_result)
 from app.models import Alert, Dependent, MealLog
-from app.schemas import (AlertOutput, AlertPatch, DependentCreate, DependentOutput,
-                         DependentPatch, LoginInput, MealOutput, RegisterInput, TokenOutput, UserOutput,
-                         ScanInput, ScanOutput, WeeklySummaryOutput)
+from app.schemas import (AlertOutput, AlertPatch, DailyIntakeOutput, DependentCreate, DependentOutput,
+                         DependentPatch, LoginInput, MealEatenInput, MealEatenOutput, MealOutput,
+                         RegisterInput, TokenOutput, UserOutput, ScanInput, ScanOutput, WeeklySummaryOutput)
 from app.summary import weekly_summary
 
 router = APIRouter()
@@ -88,6 +90,23 @@ def acknowledge_alert(id: RecordId, data: AlertPatch, session: DbSession, user: 
     session.refresh(alert)
     _ = alert.meal_log.product
     return alert
+
+
+@router.get('/dependents/{id}/daily-intake', response_model=DailyIntakeOutput)
+def get_daily_intake(id: RecordId, session: DbSession, user: CurrentUser,
+                     intake_date: Annotated[date | None, Query(alias='date')] = None):
+    dependent = owned_dependent(session, id, user.id)
+    return daily_intake(session, dependent, intake_date)
+
+
+@router.patch('/meals/{id}', response_model=MealEatenOutput)
+def mark_meal_eaten(id: RecordId, data: MealEatenInput, session: DbSession, user: CurrentUser):
+    meal = owned_meal(session, id, user.id)
+    meal.eaten = True
+    meal.grams_eaten = data.grams_eaten
+    session.commit()
+    session.refresh(meal)
+    return meal
 
 
 @router.get('/dependents/{id}/summary/weekly', response_model=WeeklySummaryOutput)

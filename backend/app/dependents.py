@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.errors import ApiError
-from app.models import Alert, Dependent, DietaryProfile
+from app.models import Alert, Dependent, DietaryProfile, MealLog
 from app.schemas import DependentCreate, DependentPatch
 
 
@@ -13,6 +13,14 @@ def owned_dependent(session: Session, dependent_id: int, caregiver_id: int) -> D
     if dependent is None:
         raise ApiError(403, 'FORBIDDEN', 'Access to this resource is forbidden.')
     return dependent
+
+
+def owned_meal(session: Session, meal_id: int, caregiver_id: int) -> MealLog:
+    meal = session.scalar(select(MealLog).join(Dependent).where(
+        MealLog.id == meal_id, Dependent.caregiver_id == caregiver_id))
+    if meal is None:
+        raise ApiError(403, 'FORBIDDEN', 'Access to this resource is forbidden.')
+    return meal
 
 
 def owned_alert(session: Session, alert_id: int, caregiver_id: int) -> Alert:

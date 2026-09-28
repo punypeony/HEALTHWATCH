@@ -2,7 +2,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import (CheckConstraint, Date, DateTime, ForeignKey, ForeignKeyConstraint,
+from sqlalchemy import (Boolean, CheckConstraint, Date, DateTime, ForeignKey, ForeignKeyConstraint,
                         Integer, Numeric, Text, UniqueConstraint, event, func)
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.ext.mutable import MutableList
@@ -82,6 +82,10 @@ class MealLog(CreatedAt, Base):
     __tablename__ = 'meal_logs'
     __table_args__ = (
         CheckConstraint("risk_label IN ('safe', 'warning', 'danger')", name='ck_meal_logs_risk'),
+        CheckConstraint(
+            '(eaten = false AND grams_eaten IS NULL) OR (eaten = true AND grams_eaten > 0)',
+            name='ck_meal_logs_eaten_grams',
+        ),
         UniqueConstraint('id', 'dependent_id', name='uq_meal_logs_id_dependent'),
     )
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -89,6 +93,8 @@ class MealLog(CreatedAt, Base):
     scanned_product_id: Mapped[int] = mapped_column(ForeignKey('scanned_products.id', ondelete='RESTRICT'), index=True)
     risk_label: Mapped[str] = mapped_column(Text)
     risk_reasons: Mapped[list] = mapped_column(JSONB)
+    eaten: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default='false')
+    grams_eaten: Mapped[Decimal | None] = mapped_column(Numeric(7, 2))
     dependent: Mapped[Dependent] = relationship(back_populates='meal_logs')
     product: Mapped[ScannedProduct] = relationship(back_populates='meal_logs')
     alerts: Mapped[list['Alert']] = relationship(back_populates='meal_log', foreign_keys='Alert.meal_log_id', passive_deletes='all')

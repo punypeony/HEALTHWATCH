@@ -1,5 +1,5 @@
 """Input allowlists and explicit public response contracts."""
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Literal
 
@@ -179,11 +179,50 @@ class ScanOutput(BaseModel):
     saturated_fat_g: float | None = None
     carbohydrate_g: float | None = None
     protein_g: float | None = None
+    serving_grams: float | None = None
 
     @model_serializer(mode='wrap')
     def _omit_unused_grams(self, handler):
         data = handler(self)
-        for key in ('saturated_fat_g', 'carbohydrate_g', 'protein_g'):
+        for key in ('saturated_fat_g', 'carbohydrate_g', 'protein_g', 'serving_grams'):
             if data.get(key) is None:
                 data.pop(key, None)
         return data
+
+
+class MealEatenInput(InputModel):
+    grams_eaten: Annotated[Decimal, Field(gt=0, max_digits=7, decimal_places=2, allow_inf_nan=False)]
+
+
+class MealEatenOutput(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    eaten: bool
+    grams_eaten: float
+    risk_label: Literal['safe', 'warning', 'danger']
+
+
+class IntakeNutrient(BaseModel):
+    consumed: float | None
+    percentage: float | None
+    exceeded: bool | None
+    incomplete: bool = False
+    target: float | None = None
+    remaining: float | None = None
+    limit: float | None = None
+
+    @model_serializer(mode='wrap')
+    def _omit_empty(self, handler):
+        data = handler(self)
+        if data.get('incomplete') is False:
+            data.pop('incomplete', None)
+        for key in ('target', 'remaining', 'limit'):
+            if data.get(key) is None:
+                data.pop(key, None)
+        return data
+
+
+class DailyIntakeOutput(BaseModel):
+    dependent_id: int
+    date: date
+    nutrients: dict[str, IntakeNutrient]

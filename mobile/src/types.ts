@@ -120,6 +120,23 @@ export type ScanResult = {
   saturated_fat_g?: number | null;
   carbohydrate_g?: number | null;
   protein_g?: number | null;
+  serving_grams?: number | null;
+};
+
+export type IntakeNutrient = {
+  consumed: number | null;
+  percentage: number | null;
+  exceeded: boolean | null;
+  incomplete?: boolean;
+  target?: number;
+  remaining?: number | null;
+  limit?: number;
+};
+
+export type DailyIntake = {
+  dependent_id: number;
+  date: string;
+  nutrients: Record<string, IntakeNutrient>;
 };
 
 export type AuthStackParamList = {
@@ -138,4 +155,5 @@ export type DependentTabParamList = {
   History: { dependentId: number };
   Alerts: { dependentId: number };
   Summary: { dependentId: number };
+  Intake: { dependentId: number };
 };

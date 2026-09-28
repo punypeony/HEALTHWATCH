@@ -11,6 +11,7 @@ import type {
   ScanResult,
   TokenResponse,
   User,
+  DailyIntake,
   WeeklySummary,
 } from "./types";
 import { getApiBaseUrl } from "./utils/apiBaseUrl";
@@ -144,6 +145,17 @@ export function acknowledgeAlert(id: number): Promise<Alert> {
 
 export function getWeeklySummary(dependentId: number): Promise<WeeklySummary> {
   return request<WeeklySummary>(`/dependents/${dependentId}/summary/weekly`);
+}
+
+export function getDailyIntake(dependentId: number): Promise<DailyIntake> {
+  return request<DailyIntake>(`/dependents/${dependentId}/daily-intake`);
+}
+
+export function markMealEaten(mealId: number, gramsEaten: number): Promise<void> {
+  return request(`/meals/${mealId}`, {
+    method: "PATCH",
+    body: { grams_eaten: gramsEaten },
+  });
 }
 
 export function scanDependent(dependentId: number, barcode: string): Promise<ScanResult> {
