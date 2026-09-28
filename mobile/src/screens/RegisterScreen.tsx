@@ -18,6 +18,7 @@ export function RegisterScreen({ navigation }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -40,6 +41,10 @@ export function RegisterScreen({ navigation }: Props) {
       setFormError("Password must be 8 to 1024 characters.");
       return;
     }
+    if (password !== confirmPassword) {
+      setFormError("Passwords do not match.");
+      return;
+    }
 
     setSubmitting(true);
     setFormError(null);
@@ -60,7 +65,7 @@ export function RegisterScreen({ navigation }: Props) {
     <SafeAreaView style={styles.fill}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.sheet}>
-          <Text style={typography.welcome}>Create an account</Text>
+          <Text style={typography.welcome}>Welcome aboard, let's get started!</Text>
           <Field label="Name" tone="light" value={name} onChangeText={setName} autoCapitalize="words" />
           <Field
             label="Email"
@@ -78,9 +83,17 @@ export function RegisterScreen({ navigation }: Props) {
             secureTextEntry
             autoCapitalize="none"
           />
+          <Field
+            label="Confirm your password"
+            tone="light"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            autoCapitalize="none"
+          />
           <Text style={styles.note}>Use at least 8 characters.</Text>
           {formError ? <Text style={typography.error}>{formError}</Text> : null}
-          <Button label="Create account" onPress={() => void onSubmit()} pending={submitting} />
+          <Button label="Sign Up" onPress={() => void onSubmit()} pending={submitting} />
           <Button
             label="Already have an account"
             variant="secondary"

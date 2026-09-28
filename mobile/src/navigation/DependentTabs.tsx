@@ -89,7 +89,14 @@ function PillItem({
 }) {
   return (
     <Pressable onPress={onPress} style={styles.item}>
-      <Text style={[styles.label, active ? styles.active : null]} numberOfLines={1}>
+      <Text
+        style={[
+          styles.label,
+          active ? styles.active : null,
+          label === "Scan" ? styles.scan : null,
+        ]}
+        numberOfLines={1}
+      >
         {label}
       </Text>
     </Pressable>
@@ -124,6 +131,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 2,
+  },
+  scan: {
+    color: colors.white,
+    backgroundColor: colors.teal,
+    overflow: "hidden",
+    borderRadius: 22,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    minWidth: 44,
+    minHeight: 44,
+    textAlign: "center",
   },
   label: {
     fontSize: 12,

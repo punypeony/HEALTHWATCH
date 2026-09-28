@@ -1,8 +1,8 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 
-import { createDependent, getDependent, updateDependent } from "../api";
+import { createDependent, deleteDependent, getDependent, updateDependent } from "../api";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { Field } from "../components/Field";
@@ -15,6 +15,8 @@ import type { AppStackParamList, DietaryProfile, Sex } from "../types";
 import { errorMessage } from "../utils/errors";
 
 type Props = NativeStackScreenProps<AppStackParamList, "DependentForm">;
+
+const ALLERGY_SHORTCUTS = ["Milk", "Soy", "Peanut", "Gluten/Wheat", "Egg", "Corn", "Lupin"];
 
 const TRACKED_CONDITIONS = new Set([
   "diabetic",
@@ -72,6 +74,7 @@ export function DependentFormScreen({ navigation, route }: Props) {
   const [extraConditions, setExtraConditions] = useState<string[]>([]);
   const [profile, setProfile] = useState<DietaryProfile | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -134,6 +137,37 @@ export function DependentFormScreen({ navigation, route }: Props) {
     });
     setAllergyDraft("");
   }, [allergyDraft]);
+
+  function toggleAllergy(label: string) {
+    setAllergies((current) => {
+      const exists = current.some((item) => item.toLowerCase() === label.toLowerCase());
+      if (exists) {
+        return current.filter((item) => item.toLowerCase() !== label.toLowerCase());
+      }
+      return [...current, label];
+    });
+  }
+
+  function onDelete() {
+    if (!dependentId) {
+      return;
+    }
+    Alert.alert("Delete dependent", "This removes the dependent and their records.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          setDeleting(true);
+          setFormError(null);
+          void deleteDependent(dependentId)
+            .then(() => navigation.popToTop())
+            .catch((error: unknown) => setFormError(errorMessage(error)))
+            .finally(() => setDeleting(false));
+        },
+      },
+    ]);
+  }
 
   async function onSubmit() {
     const trimmedName = name.trim();
@@ -246,85 +280,115 @@ export function DependentFormScreen({ navigation, route }: Props) {
       />
       <View style={{ gap: spacing.xs }}>
         <Text style={typography.label}>Sex</Text>
-        <View style={{ flexDirection: "row", gap: spacing.sm }}>
+        <View style={{ flexDirection: "row", borderRadius: radius.pill, overflow: "hidden", borderWidth: 1, borderColor: colors.teal }}>
           {(["male", "female"] as const).map((option) => (
             <Pressable
               key={option}
               onPress={() => setSex(option)}
               style={{
+                flex: 1,
                 backgroundColor: sex === option ? colors.teal : colors.white,
-                borderWidth: 1,
-                borderColor: colors.teal,
-                borderRadius: radius.pill,
                 minHeight: 44,
+                alignItems: "center",
                 justifyContent: "center",
-                paddingHorizontal: spacing.md,
               }}
             >
-              <Text style={sex === option ? typography.button : typography.buttonDark}>{option}</Text>
+              <Text style={sex === option ? typography.button : typography.buttonDark}>
+                {option === "male" ? "Male" : "Female"}
+              </Text>
             </Pressable>
           ))}
         </View>
       </View>
-      <Field
-        label="Allergy"
-        value={allergyDraft}
-        onChangeText={setAllergyDraft}
-        autoCapitalize="none"
-        onSubmitEditing={addAllergy}
-      />
-      <Button label="Add allergy" variant="secondary" onPress={addAllergy} disabled={submitting} />
+      <Text style={typography.label}>Allergies</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
-        {allergies.map((allergy) => (
-          <Pressable
-            key={allergy}
-            onPress={() => setAllergies((current) => current.filter((item) => item !== allergy))}
-            style={{
-              backgroundColor: colors.surface,
-              borderRadius: radius.pill,
-              paddingHorizontal: spacing.md,
-              paddingVertical: spacing.sm,
-            }}
-          >
-            <Text style={typography.body}>{allergy} (remove)</Text>
-          </Pressable>
-        ))}
-      </View>
-      {(
-        [
-          ["Diabetic", diabetic, setDiabetic],
-          ["Hypertension", hypertension, setHypertension],
-          ["High cholesterol", highCholesterol, setHighCholesterol],
-          ["Kidney disease", kidneyDisease, setKidneyDisease],
-        ] as const
-      ).map(([label, checked, setChecked]) => (
         <Pressable
-          key={label}
-          onPress={() => setChecked((value) => !value)}
+          onPress={() => setAllergies([])}
           style={{
-            backgroundColor: checked ? colors.tealSoft : colors.white,
+            backgroundColor: allergies.length === 0 ? colors.tealSoft : colors.white,
+            borderRadius: radius.pill,
             borderWidth: 1,
             borderColor: colors.teal,
-            borderRadius: radius.pill,
             minHeight: 44,
             justifyContent: "center",
             paddingHorizontal: spacing.md,
           }}
         >
-          <Text style={checked ? typography.button : typography.buttonDark}>
-            {checked ? "[x]" : "[ ]"} {label}
-          </Text>
+          <Text style={allergies.length === 0 ? typography.button : typography.buttonDark}>No known allergies</Text>
         </Pressable>
-      ))}
+        {ALLERGY_SHORTCUTS.map((label) => {
+          const selected = allergies.some((item) => item.toLowerCase() === label.toLowerCase());
+          return (
+            <Pressable
+              key={label}
+              onPress={() => toggleAllergy(label)}
+              style={{
+                backgroundColor: selected ? colors.tealSoft : colors.white,
+                borderRadius: radius.pill,
+                borderWidth: 1,
+                borderColor: colors.teal,
+                minHeight: 44,
+                justifyContent: "center",
+                paddingHorizontal: spacing.md,
+              }}
+            >
+              <Text style={selected ? typography.button : typography.buttonDark}>{label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <Field
+        label="Other allergy"
+        value={allergyDraft}
+        onChangeText={setAllergyDraft}
+        autoCapitalize="none"
+        onSubmitEditing={addAllergy}
+      />
+      <Button label="Add allergy" variant="secondary" onPress={addAllergy} disabled={submitting || deleting} />
+      {allergies.length > 0 ? (
+        <Text style={typography.body}>Selected: {allergies.join(", ")}. Tap a chip again to remove it.</Text>
+      ) : null}
+      <Text style={typography.label}>Conditions</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
+        {(
+          [
+            ["Diabetic", diabetic, setDiabetic],
+            ["Hypertension", hypertension, setHypertension],
+            ["High cholesterol", highCholesterol, setHighCholesterol],
+            ["Kidney disease", kidneyDisease, setKidneyDisease],
+          ] as const
+        ).map(([label, checked, setChecked]) => (
+          <Pressable
+            key={label}
+            onPress={() => setChecked((value) => !value)}
+            style={{
+              backgroundColor: checked ? colors.tealSoft : colors.white,
+              borderWidth: 1,
+              borderColor: colors.teal,
+              borderRadius: radius.pill,
+              minHeight: 44,
+              justifyContent: "center",
+              paddingHorizontal: spacing.md,
+            }}
+          >
+            <Text style={checked ? typography.button : typography.buttonDark}>{label}</Text>
+          </Pressable>
+        ))}
+      </View>
       {extraConditions.length > 0 ? (
         <Text style={typography.body}>Other recorded conditions: {extraConditions.join(", ")}</Text>
       ) : null}
       {formError ? <Text style={typography.error}>{formError}</Text> : null}
       <Button
-        label={dependentId ? "Save changes" : "Add dependent"}
+        label={dependentId ? "Save Changes" : "Add dependent"}
+        variant="save"
         onPress={() => void onSubmit()}
         pending={submitting}
+        disabled={deleting}
       />
+      {dependentId ? (
+        <Button label="Delete Dependent" variant="danger" onPress={onDelete} pending={deleting} disabled={submitting} />
+      ) : null}
     </ScrollView>
   );
 }

@@ -7,6 +7,7 @@ import { Button } from "../components/Button";
 import { RiskBadge, riskFill } from "../components/RiskBadge";
 import { ScreenStatus } from "../components/ScreenStatus";
 import { useFocusedQuery } from "../hooks/useFocusedQuery";
+import { colors } from "../theme/colors";
 import { radius, spacing } from "../theme/spacing";
 import { screen } from "../theme/screen";
 import { typography } from "../theme/typography";
@@ -50,16 +51,28 @@ export function HistoryScreen({ route }: Props) {
             backgroundColor: riskFill(meal.risk_label),
             borderRadius: radius.card,
             padding: spacing.sm,
-            gap: spacing.xs,
+            gap: spacing.sm,
+            flexDirection: "row",
+            alignItems: "center",
           }}
         >
-          <RiskBadge label={meal.risk_label} />
-          <Text style={typography.body}>{formatWhen(meal.created_at)}</Text>
-          {meal.risk_reasons.map((reason, index) => (
-            <Text key={`${meal.id}-${index}`} style={typography.body}>
-              {reason}
-            </Text>
-          ))}
+          <View
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 28,
+              backgroundColor: colors.avatar,
+            }}
+          />
+          <View style={{ flex: 1, gap: spacing.xs }}>
+            <RiskBadge label={meal.risk_label} />
+            <Text style={typography.body}>{formatWhen(meal.created_at)}</Text>
+            {meal.risk_reasons.map((reason, index) => (
+              <Text key={`${meal.id}-${index}`} style={typography.body}>
+                {reason}
+              </Text>
+            ))}
+          </View>
         </View>
       ))}
       <Button label="Refresh" variant="secondary" onPress={meals.retry} />

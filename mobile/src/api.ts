@@ -128,6 +128,10 @@ export function updateDependent(id: number, input: DependentInput): Promise<Depe
   return request<Dependent>(`/dependents/${id}`, { method: "PATCH", body: input });
 }
 
+export function deleteDependent(id: number): Promise<void> {
+  return request<void>(`/dependents/${id}`, { method: "DELETE" });
+}
+
 export function listMeals(dependentId: number): Promise<MealLog[]> {
   return request<MealLog[]>(`/dependents/${dependentId}/meals`);
 }

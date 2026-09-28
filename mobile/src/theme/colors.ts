@@ -20,6 +20,8 @@ export const colors = {
   warning: "#FFEDA6",
   danger: "#FFBAB9",
   acknowledged: "#CDF3EC",
+  saveBorder: "#1F8471",
   alertActive: "#FCEBEB",
+  deleteText: "#791F1F",
   shadow: "rgba(0, 0, 0, 0.25)",
 };

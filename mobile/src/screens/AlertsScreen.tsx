@@ -93,7 +93,7 @@ function AlertCard({
       <Text style={typography.body}>{formatWhen(alert.created_at)}</Text>
       <Text style={typography.muted}>{acknowledged ? "Acknowledged" : "Active"}</Text>
       {acknowledged ? null : (
-        <Button label="Acknowledge" onPress={onAcknowledge} pending={pending} />
+        <Button label="Acknowledge" variant="save" onPress={onAcknowledge} pending={pending} />
       )}
     </View>
   );

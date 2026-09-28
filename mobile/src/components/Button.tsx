@@ -9,7 +9,7 @@ type ButtonProps = {
   onPress: () => void;
   disabled?: boolean;
   pending?: boolean;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "save" | "danger";
 };
 
 export function Button({
@@ -19,18 +19,23 @@ export function Button({
   pending = false,
   variant = "primary",
 }: ButtonProps) {
-  const secondary = variant === "secondary";
+  const textStyle =
+    variant === "secondary"
+      ? typography.buttonDark
+      : variant === "save"
+        ? styles.saveText
+        : variant === "danger"
+          ? styles.dangerText
+          : typography.button;
+  const spinner =
+    variant === "primary" ? colors.white : variant === "danger" ? colors.deleteText : colors.forest;
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled || pending}
-      style={[styles.base, secondary ? styles.secondary : styles.primary, disabled ? styles.disabled : null]}
+      style={[styles.base, styles[variant], disabled ? styles.disabled : null]}
     >
-      {pending ? (
-        <ActivityIndicator color={secondary ? colors.forest : colors.white} />
-      ) : (
-        <Text style={secondary ? typography.buttonDark : typography.button}>{label}</Text>
-      )}
+      {pending ? <ActivityIndicator color={spinner} /> : <Text style={textStyle}>{label}</Text>}
     </Pressable>
   );
 }
@@ -51,6 +56,24 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.teal,
+  },
+  save: {
+    backgroundColor: colors.acknowledged,
+    borderWidth: 1,
+    borderColor: colors.saveBorder,
+  },
+  danger: {
+    backgroundColor: colors.alertActive,
+    borderWidth: 1,
+    borderColor: colors.deleteText,
+  },
+  saveText: {
+    ...typography.button,
+    color: colors.forest,
+  },
+  dangerText: {
+    ...typography.button,
+    color: colors.deleteText,
   },
   disabled: {
     opacity: 0.6,
