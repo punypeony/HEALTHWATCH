@@ -54,9 +54,13 @@ At the same time, most nutrition guidance is written for the general population 
 
 ---
 
-The study aims to develop a food consumption health monitoring system that can help caregivers assess whether food products are appropriate for their dependent relatives based on their dietary information, allergies, and medical conditions. 
+The study aims to develop a food consumption health monitoring system that can help caregivers assess whether food products are appropriate for their dependent relatives based on their dietary information, allergies, and medical conditions. Specifically, it seeks to answer the following questions:
 
-SOP 1-5 questions
+1. How may a food consumption monitoring system be designed so that a caregiver can manage a separate health profile for each dependent, including age, height, weight, sex, allergies, and medical conditions such as diabetes and hypertension?
+2. How may a barcode scanning feature be developed so that a caregiver can identify a food product and retrieve its nutrition information?
+3. How may the system automatically compute each dependent's daily sodium, sugar, and calorie targets from established nutrition guidance, and reduce those targets when a recorded condition requires it, instead of using one generic limit for every person?
+4. How may the Open Food Facts API, a PostgreSQL database, and a locally trained Decision Tree be integrated to process food information and classify risk for a specific dependent?
+5. How may the system's functionality and classification performance be evaluated in identifying whether a scanned food is safe, a warning, or a danger for that dependent?
 
 # **3\. PROJECT OBJECTIVES**
 
