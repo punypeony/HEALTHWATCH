@@ -1,4 +1,5 @@
 """Input allowlists and explicit public response contracts."""
+import re
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Literal
@@ -152,7 +153,46 @@ class AlertPatch(InputModel):
 
 
 class ScanInput(InputModel):
-    barcode: str = Field(strict=True, min_length=8, max_length=14, pattern=r'^[0-9]+$')
+    barcode: str | None = None
+    dish_name: str | None = None
+
+    @field_validator('barcode', 'dish_name', mode='before')
+    @classmethod
+    def text_or_absent(cls, value):
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError('Lookup input must be text.')
+        return value
+
+    @field_validator('barcode')
+    @classmethod
+    def barcode_digits(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if not re.fullmatch(r'[0-9]{8,14}', value):
+            raise ValueError('Barcode must contain 8 to 14 digits.')
+        return value
+
+    @field_validator('dish_name')
+    @classmethod
+    def dish_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if '\x00' in value:
+            raise ValueError('Dish name is invalid.')
+        stripped = value.strip()
+        if not stripped:
+            return None
+        if len(stripped) > 200:
+            raise ValueError('Dish name is invalid.')
+        return stripped
+
+    @model_validator(mode='after')
+    def exactly_one_lookup(self):
+        if (self.barcode is None) == (self.dish_name is None):
+            raise ValueError('Provide a barcode or a dish name.')
+        return self
 
 
 class ScanProductOutput(BaseModel):

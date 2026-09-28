@@ -485,3 +485,98 @@ def test_adult_protein_limit_and_child_exception(client, headers, dependent, db_
         ['kidney disease'], {'sodium_pct': 0.1, 'sugar_pct': 0.1}, protein_pct=0.5) == 0
     assert scan.reported_grams(Decimal('60'), 0.6) == 60
     assert scan.reported_grams(Decimal('45.5'), 0.5) is None
+
+
+def test_typed_dish_names_ignore_case_and_spaces(client, headers, dependent, db_session, lookup):
+    spaghetti = client.post(f'/dependents/{dependent.id}/scan', headers=headers,
+                            json={'dish_name': '  Spaghetti  '})
+    assert spaghetti.status_code == 200, spaghetti.text
+    body = spaghetti.json()
+    assert body['product']['barcode'] == 'dish:spaghetti'
+    assert body['product']['name'] == 'Pasta, spaghetti'
+    assert body['product']['calories'] == 361
+    assert body['product']['sodium_mg'] == 6
+    assert body['product']['sugar_g'] == 2.7
+    assert 'saturated_fat_g' not in body
+    meal = db_session.get(MealLog, body['meal_log_id'])
+    assert meal.eaten is False and meal.grams_eaten is None
+    stored = db_session.scalar(select(ScannedProduct).where(ScannedProduct.barcode == 'dish:spaghetti'))
+    assert stored.sodium_mg == Decimal('6.00')
+    assert stored.calories == Decimal('361.00')
+    assert stored.sugar_g == Decimal('2.70')
+    nutrients = stored.raw_response['product']['nutriments']
+    assert nutrients['sodium_100g'] == pytest.approx(0.006)
+    assert nutrients['saturated-fat_100g'] == pytest.approx(0.2)
+    assert nutrients['fat_100g'] == pytest.approx(1.1)
+    assert stored.raw_response['product']['allergens_tags'] == []
+    lookup.assert_not_called()
+
+    adobo = client.post(f'/dependents/{dependent.id}/scan', headers=headers, json={'dish_name': 'ADOBO'})
+    assert adobo.status_code == 200, adobo.text
+    adobo_body = adobo.json()
+    assert adobo_body['risk_label'] == 'safe'
+    assert adobo_body['product']['barcode'] == 'dish:adobo'
+    assert adobo_body['product']['name'] == 'Pork adobo, cnd'
+    assert adobo_body['product']['sodium_mg'] == 254
+    assert adobo_body['product']['calories'] == 277
+    assert adobo_body['product']['sugar_g'] == 0.1
+    assert 'saturated_fat_g' not in adobo_body
+    adobo_row = db_session.scalar(select(ScannedProduct).where(ScannedProduct.barcode == 'dish:adobo'))
+    assert adobo_row.sodium_mg == Decimal('254.00')
+    assert 'saturated-fat_100g' not in adobo_row.raw_response['product']['nutriments']
+    assert adobo_row.raw_response['product']['nutriments']['fat_100g'] == pytest.approx(24.8)
+    assert db_session.scalar(select(func.count()).select_from(MealLog)) == 2
+    lookup.assert_not_called()
+
+
+def test_unknown_dish_writes_nothing(client, headers, dependent, db_session, lookup):
+    response = client.post(f'/dependents/{dependent.id}/scan', headers=headers, json={'dish_name': 'pizza'})
+    assert response.status_code == 404
+    assert response.json()['error']['code'] == 'PRODUCT_NOT_FOUND'
+    assert db_session.scalar(select(func.count()).select_from(MealLog)) == 0
+    lookup.assert_not_called()
+
+
+def test_adobo_high_cholesterol_rejects_missing_saturated_fat(client, headers, dependent, db_session, lookup):
+    dependent.dietary_profile.conditions = ['high cholesterol']
+    db_session.commit()
+    response = client.post(f'/dependents/{dependent.id}/scan', headers=headers, json={'dish_name': 'adobo'})
+    assert response.status_code == 422
+    assert response.json()['error']['code'] == 'PRODUCT_DATA_INVALID'
+    assert db_session.scalar(select(func.count()).select_from(MealLog)) == 0
+    lookup.assert_not_called()
+
+
+def test_dish_lookup_skips_network_in_demo_mode(client, headers, dependent, monkeypatch, lookup):
+    monkeypatch.setenv('DEMO_MODE', 'true')
+    response = client.post(f'/dependents/{dependent.id}/scan', headers=headers, json={'dish_name': 'spaghetti'})
+    assert response.status_code == 200, response.text
+    lookup.assert_not_called()
+    again = client.post(f'/dependents/{dependent.id}/scan', headers=headers, json={'dish_name': 'spaghetti'})
+    assert again.status_code == 200, again.text
+
+
+@pytest.mark.parametrize('payload', [
+    {},
+    {'barcode': BARCODE, 'dish_name': 'spaghetti'},
+    {'dish_name': '   '},
+    {'barcode': '123'},
+])
+def test_scan_accepts_exactly_one_lookup(client, headers, dependent, payload):
+    response = client.post(f'/dependents/{dependent.id}/scan', headers=headers, json=payload)
+    assert response.status_code == 422
+    assert response.json()['error']['code'] == 'VALIDATION_ERROR'
+
+
+def test_condition_nutrients_missing_from_dishes_are_not_invented(client, headers, dependent, db_session):
+    dependent.dietary_profile.conditions = ['diabetic']
+    db_session.commit()
+    diabetic = client.post(f'/dependents/{dependent.id}/scan', headers=headers, json={'dish_name': 'spaghetti'})
+    assert diabetic.status_code == 422
+    assert diabetic.json()['error']['code'] == 'PRODUCT_DATA_INVALID'
+    dependent.dietary_profile.conditions = ['kidney disease']
+    db_session.commit()
+    kidney = client.post(f'/dependents/{dependent.id}/scan', headers=headers, json={'dish_name': 'adobo'})
+    assert kidney.status_code == 422
+    assert kidney.json()['error']['code'] == 'PRODUCT_DATA_INVALID'
+    assert db_session.scalar(select(func.count()).select_from(MealLog)) == 0

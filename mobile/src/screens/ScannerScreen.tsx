@@ -18,12 +18,16 @@ const RISK_COLOR: Record<RiskLabel, string> = {
   danger: "#b00020",
 };
 
+type Lookup =
+  | { source: "barcode"; value: string }
+  | { source: "dish"; value: string };
+
 type ScanPhase =
   | { kind: "scan" }
   | { kind: "manual" }
-  | { kind: "loading"; barcode: string }
+  | { kind: "loading"; lookup: Lookup }
   | { kind: "result"; result: ScanResult }
-  | { kind: "error"; barcode: string; title: string; message: string; canRetry: boolean };
+  | { kind: "error"; lookup: Lookup; title: string; message: string; canRetry: boolean };
 
 type Props = BottomTabScreenProps<DependentTabParamList, "Scan">;
 
@@ -31,11 +35,11 @@ function isBarcode(value: string): boolean {
   return /^[0-9]{8,14}$/.test(value);
 }
 
-function failurePhase(error: unknown, barcode: string): ScanPhase {
+function failurePhase(error: unknown, lookup: Lookup): ScanPhase {
   if (error instanceof ApiError && error.code === "PRODUCT_NOT_FOUND") {
     return {
       kind: "error",
-      barcode,
+      lookup,
       title: "Product not found",
       message: error.message,
       canRetry: false,
@@ -44,7 +48,7 @@ function failurePhase(error: unknown, barcode: string): ScanPhase {
   if (error instanceof ApiError && (error.code === "NETWORK_ERROR" || error.status === 0)) {
     return {
       kind: "error",
-      barcode,
+      lookup,
       title: "Network failure",
       message: error.message,
       canRetry: true,
@@ -52,7 +56,7 @@ function failurePhase(error: unknown, barcode: string): ScanPhase {
   }
   return {
     kind: "error",
-    barcode,
+    lookup,
     title: "Scan failed",
     message: errorMessage(error),
     canRetry: true,
@@ -64,36 +68,50 @@ export function ScannerScreen({ route }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
   const [phase, setPhase] = useState<ScanPhase>({ kind: "scan" });
   const [draft, setDraft] = useState("");
+  const [dishDraft, setDishDraft] = useState("");
   const [askingEaten, setAskingEaten] = useState(false);
   const [gramsDraft, setGramsDraft] = useState("");
   const [eatenNote, setEatenNote] = useState<string | null>(null);
   const lastScanAt = useRef(0);
   const busy = useRef(false);
 
-  async function submitBarcode(raw: string) {
-    const barcode = raw.trim();
-    if (!isBarcode(barcode)) {
+  async function submitLookup(lookup: Lookup) {
+    if (lookup.source === "barcode" && !isBarcode(lookup.value)) {
       busy.current = false;
       setPhase({
         kind: "error",
-        barcode,
+        lookup,
         title: "Invalid barcode",
         message: "Barcode must contain 8 to 14 digits.",
         canRetry: false,
       });
       return;
     }
+    if (lookup.source === "dish" && !lookup.value.trim()) {
+      busy.current = false;
+      setPhase({
+        kind: "error",
+        lookup,
+        title: "Invalid dish",
+        message: "Enter a dish name.",
+        canRetry: false,
+      });
+      return;
+    }
 
     busy.current = true;
-    setPhase({ kind: "loading", barcode });
+    setPhase({ kind: "loading", lookup });
     try {
-      const result = await scanDependent(dependentId, barcode);
+      const result = await scanDependent(
+        dependentId,
+        lookup.source === "barcode" ? { barcode: lookup.value } : { dish_name: lookup.value },
+      );
       setAskingEaten(false);
       setEatenNote(null);
       setGramsDraft(result.serving_grams != null ? String(result.serving_grams) : "");
       setPhase({ kind: "result", result });
     } catch (error) {
-      setPhase(failurePhase(error, barcode));
+      setPhase(failurePhase(error, lookup));
     } finally {
       busy.current = false;
     }
@@ -101,6 +119,7 @@ export function ScannerScreen({ route }: Props) {
 
   function scanAgain() {
     setDraft("");
+    setDishDraft("");
     setAskingEaten(false);
     setEatenNote(null);
     setPhase({ kind: "scan" });
@@ -130,7 +149,11 @@ export function ScannerScreen({ route }: Props) {
     return (
       <ScreenStatus
         title="Scan"
-        message={`Looking up barcode ${phase.barcode}...`}
+        message={
+          phase.lookup.source === "barcode"
+            ? `Looking up barcode ${phase.lookup.value}...`
+            : `Looking up ${phase.lookup.value}...`
+        }
         loading
       />
     );
@@ -197,7 +220,7 @@ export function ScannerScreen({ route }: Props) {
         {phase.canRetry ? (
           <Pressable
             onPress={() => {
-              void submitBarcode(phase.barcode);
+              void submitLookup(phase.lookup);
             }}
             style={placeholder.button}
           >
@@ -207,11 +230,16 @@ export function ScannerScreen({ route }: Props) {
         <Pressable onPress={scanAgain} style={placeholder.button}>
           <Text>Scan again</Text>
         </Pressable>
-        <ManualBarcodeForm
-          value={draft}
-          onChange={setDraft}
-          onSubmit={() => {
-            void submitBarcode(draft);
+        <ManualEntryForm
+          barcode={draft}
+          dishName={dishDraft}
+          onBarcodeChange={setDraft}
+          onDishChange={setDishDraft}
+          onBarcodeSubmit={() => {
+            void submitLookup({ source: "barcode", value: draft.trim() });
+          }}
+          onDishSubmit={() => {
+            void submitLookup({ source: "dish", value: dishDraft.trim() });
           }}
         />
       </ScrollView>
@@ -241,11 +269,16 @@ export function ScannerScreen({ route }: Props) {
             <Text>Allow camera</Text>
           </Pressable>
         )}
-        <ManualBarcodeForm
-          value={draft}
-          onChange={setDraft}
-          onSubmit={() => {
-            void submitBarcode(draft);
+        <ManualEntryForm
+          barcode={draft}
+          dishName={dishDraft}
+          onBarcodeChange={setDraft}
+          onDishChange={setDishDraft}
+          onBarcodeSubmit={() => {
+            void submitLookup({ source: "barcode", value: draft.trim() });
+          }}
+          onDishSubmit={() => {
+            void submitLookup({ source: "dish", value: dishDraft.trim() });
           }}
         />
       </ScrollView>
@@ -267,7 +300,7 @@ export function ScannerScreen({ route }: Props) {
           }
           lastScanAt.current = now;
           busy.current = true;
-          void submitBarcode(data);
+          void submitLookup({ source: "barcode", value: data.trim() });
         }}
       />
       <View style={styles.overlay}>
@@ -280,26 +313,41 @@ export function ScannerScreen({ route }: Props) {
   );
 }
 
-function ManualBarcodeForm({
-  value,
-  onChange,
-  onSubmit,
+function ManualEntryForm({
+  barcode,
+  dishName,
+  onBarcodeChange,
+  onDishChange,
+  onBarcodeSubmit,
+  onDishSubmit,
 }: {
-  value: string;
-  onChange: (value: string) => void;
-  onSubmit: () => void;
+  barcode: string;
+  dishName: string;
+  onBarcodeChange: (value: string) => void;
+  onDishChange: (value: string) => void;
+  onBarcodeSubmit: () => void;
+  onDishSubmit: () => void;
 }) {
   return (
     <View style={placeholder.field}>
       <Field
         label="Barcode"
-        value={value}
-        onChangeText={onChange}
+        value={barcode}
+        onChangeText={onBarcodeChange}
         keyboardType="number-pad"
-        onSubmitEditing={onSubmit}
+        onSubmitEditing={onBarcodeSubmit}
       />
-      <Pressable onPress={onSubmit} style={placeholder.button}>
+      <Pressable onPress={onBarcodeSubmit} style={placeholder.button}>
         <Text>Look up barcode</Text>
+      </Pressable>
+      <Field
+        label="Dish name"
+        value={dishName}
+        onChangeText={onDishChange}
+        onSubmitEditing={onDishSubmit}
+      />
+      <Pressable onPress={onDishSubmit} style={placeholder.button}>
+        <Text>Look up dish</Text>
       </Pressable>
     </View>
   );

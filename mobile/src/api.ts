@@ -158,9 +158,12 @@ export function markMealEaten(mealId: number, gramsEaten: number): Promise<void>
   });
 }
 
-export function scanDependent(dependentId: number, barcode: string): Promise<ScanResult> {
+export function scanDependent(
+  dependentId: number,
+  lookup: { barcode: string } | { dish_name: string },
+): Promise<ScanResult> {
   return request<ScanResult>(`/dependents/${dependentId}/scan`, {
     method: "POST",
-    body: { barcode },
+    body: lookup,
   });
 }

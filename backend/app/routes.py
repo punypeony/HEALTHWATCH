@@ -8,10 +8,11 @@ from sqlalchemy.orm import selectinload
 
 from app.auth import (CurrentUser, DbSession, authenticate_user, create_access_token, register_user)
 from app.dependents import create_dependent, owned_alert, owned_dependent, owned_meal, update_dependent
+from app.dishes import resolve_dish
 from app.intake import daily_intake
 from app.food_lookup import fetch_product
 from app.ml.predict import predict_risk
-from app.scan import (validate_scan_input, calculate_product_percentages, check_allergy_match,
+from app.scan import (validate_scan_input, require_dietary_profile, calculate_product_percentages, check_allergy_match,
                       check_condition_conflict, has_high_cholesterol, has_condition,
                       saturated_fat_per_100g, saturated_fat_percentage, carbohydrate_per_100g,
                       carbohydrate_percentage, require_protein_per_100g, protein_percentage,
@@ -120,8 +121,12 @@ def get_weekly_summary(id: RecordId, session: DbSession, user: CurrentUser):
 @router.post('/dependents/{id}/scan', response_model=ScanOutput)
 def scan_product(id: RecordId, data: ScanInput, session: DbSession, user: CurrentUser):
     dependent = owned_dependent(session, id, user.id)
-    barcode = validate_scan_input(data.barcode, dependent)
-    product = fetch_product(barcode)
+    if data.dish_name is not None:
+        require_dietary_profile(dependent)
+        product = resolve_dish(data.dish_name)
+    else:
+        barcode = validate_scan_input(data.barcode, dependent)
+        product = fetch_product(barcode)
     profile = dependent.dietary_profile
     percentages = calculate_product_percentages(product, profile)
     raw = product['raw_response']

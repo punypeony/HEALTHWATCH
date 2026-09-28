@@ -1,0 +1,17 @@
+{
+  "spaghetti": {
+    "name": "Pasta, spaghetti",
+    "calories": 361,
+    "sodium_mg": 6,
+    "sugar_g": 2.7,
+    "fat_g": 1.1,
+    "saturated_fat_g": 0.2
+  },
+  "adobo": {
+    "name": "Pork adobo, cnd",
+    "calories": 277,
+    "sodium_mg": 254,
+    "sugar_g": 0.1,
+    "fat_g": 24.8
+  }
+}

@@ -12,10 +12,14 @@ from app.models import Alert, MealLog, ScannedProduct
 from app.schemas import ScanOutput
 
 
-def validate_scan_input(barcode, dependent):
-    barcode = validate_barcode(barcode)
+def require_dietary_profile(dependent):
     if dependent.dietary_profile is None:
         raise ApiError(409, 'DIETARY_PROFILE_MISSING', 'The dependent needs a dietary profile before scanning.')
+
+
+def validate_scan_input(barcode, dependent):
+    barcode = validate_barcode(barcode)
+    require_dietary_profile(dependent)
     return barcode
 
 
