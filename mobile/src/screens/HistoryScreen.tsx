@@ -1,11 +1,15 @@
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useCallback } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 
 import { listMeals } from "../api";
+import { Button } from "../components/Button";
+import { RiskBadge, riskFill } from "../components/RiskBadge";
 import { ScreenStatus } from "../components/ScreenStatus";
 import { useFocusedQuery } from "../hooks/useFocusedQuery";
-import { placeholder } from "../theme/placeholder";
+import { radius, spacing } from "../theme/spacing";
+import { screen } from "../theme/screen";
+import { typography } from "../theme/typography";
 import type { DependentTabParamList } from "../types";
 import { formatWhen } from "../utils/format";
 
@@ -17,19 +21,19 @@ export function HistoryScreen({ route }: Props) {
   const meals = useFocusedQuery(load);
 
   if (meals.status === "loading") {
-    return <ScreenStatus title="History" message="Loading meal history..." loading />;
+    return <ScreenStatus title="Scan History" message="Loading meal history..." loading />;
   }
 
   if (meals.status === "error") {
     return (
-      <ScreenStatus title="History" message={meals.message} actionLabel="Retry" onAction={meals.retry} />
+      <ScreenStatus title="Scan History" message={meals.message} actionLabel="Retry" onAction={meals.retry} />
     );
   }
 
   if (meals.data.length === 0) {
     return (
       <ScreenStatus
-        title="History"
+        title="Scan History"
         message="No meals logged for this dependent yet."
         actionLabel="Refresh"
         onAction={meals.retry}
@@ -38,20 +42,27 @@ export function HistoryScreen({ route }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={placeholder.screen}>
-      <Text style={placeholder.title}>History</Text>
+    <ScrollView contentContainerStyle={screen.tabScroll}>
       {meals.data.map((meal) => (
-        <View key={meal.id} style={placeholder.card}>
-          <Text>{meal.risk_label}</Text>
-          <Text>{formatWhen(meal.created_at)}</Text>
+        <View
+          key={meal.id}
+          style={{
+            backgroundColor: riskFill(meal.risk_label),
+            borderRadius: radius.card,
+            padding: spacing.sm,
+            gap: spacing.xs,
+          }}
+        >
+          <RiskBadge label={meal.risk_label} />
+          <Text style={typography.body}>{formatWhen(meal.created_at)}</Text>
           {meal.risk_reasons.map((reason, index) => (
-            <Text key={`${meal.id}-${index}`}>{reason}</Text>
+            <Text key={`${meal.id}-${index}`} style={typography.body}>
+              {reason}
+            </Text>
           ))}
         </View>
       ))}
-      <Pressable onPress={meals.retry} style={placeholder.button}>
-        <Text>Refresh</Text>
-      </Pressable>
+      <Button label="Refresh" variant="secondary" onPress={meals.retry} />
     </ScrollView>
   );
 }

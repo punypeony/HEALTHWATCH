@@ -1,4 +1,9 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+
+import { colors } from "../theme/colors";
+import { spacing } from "../theme/spacing";
+import { typography } from "../theme/typography";
+import { Button } from "./Button";
 
 type ScreenStatusProps = {
   title: string;
@@ -17,14 +22,10 @@ export function ScreenStatus({
 }: ScreenStatusProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
-      {loading ? <ActivityIndicator /> : null}
-      <Text style={styles.message}>{message}</Text>
-      {actionLabel && onAction ? (
-        <Pressable onPress={onAction} style={styles.button}>
-          <Text style={styles.buttonLabel}>{actionLabel}</Text>
-        </Pressable>
-      ) : null}
+      <Text style={typography.section}>{title}</Text>
+      {loading ? <ActivityIndicator color={colors.teal} /> : null}
+      <Text style={typography.body}>{message}</Text>
+      {actionLabel && onAction ? <Button label={actionLabel} onPress={onAction} /> : null}
     </View>
   );
 }
@@ -33,22 +34,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
-    padding: 16,
-    gap: 12,
-  },
-  title: {
-    fontSize: 18,
-  },
-  message: {
-    fontSize: 16,
-  },
-  button: {
-    alignSelf: "flex-start",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-  },
-  buttonLabel: {
-    fontSize: 16,
+    backgroundColor: colors.white,
+    padding: spacing.lg,
+    paddingBottom: 96,
+    gap: spacing.md,
   },
 });

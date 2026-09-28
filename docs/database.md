@@ -53,6 +53,14 @@ These displayed values are results of `compute_daily_targets`, not seed inputs.
 - Email, cached barcode, dependent profile, and dependent/week summary keys are
   unique. Foreign-key lookup columns are indexed. Risk labels and alert statuses
   are constrained to the specified values.
+- `meal_logs.eaten` starts false and `grams_eaten` stays null. A check requires
+  both: either the meal is not eaten and grams are null, or it is eaten and grams
+  are greater than zero. Daily intake sums only the second case. The weekly
+  summary still counts every scan.
+- Typed dishes are cached in `scanned_products` with barcodes `dish:spaghetti`
+  and `dish:adobo`. Those keys are not numeric, so they do not collide with
+  product barcodes. Saturated fat, carbohydrate, and protein are not columns.
+  They stay inside `raw_response` when the source provided them.
 - An alert has a composite foreign key to its meal log and dependent: a valid
   meal-log ID cannot be attached to the wrong dependent.
 - Deleting a caregiver/dependent cascades to its owned records. Cached products
@@ -66,6 +74,21 @@ baseline assumption). It then applies age-band factors, hypertension's required
 30% sodium reduction, and diabetes's required 50% sugar reduction. Free sugar
 starts at 10% of calories divided by 4. Results use Decimal arithmetic and round
 half up to two decimal places; non-positive results are rejected.
+
+Three further limits are calculated when a scan or the daily-intake report needs
+them. They are not stored on `dietary_profiles` and they are not decision-tree
+features.
+
+- Saturated fat, only when `high cholesterol` is recorded: `0.10 * daily_calories / 9`.
+  WHO healthy-diet guidance is less than 10% of energy from saturated fat, and
+  fat is 9 kcal per gram.
+- Carbohydrate, only when `diabetic` is recorded: `0.65 * daily_calories / 4`.
+  The acceptable macronutrient range is 45–65% of energy. This project uses the
+  upper end, at 4 kcal per gram.
+- Protein, only when `kidney disease` is recorded and age is 12 or older:
+  `1.3 * weight_kg`. KDIGO 2024 Practice Point 3.3.1.1 is the high-intake ceiling
+  for adults with CKD at risk of progression, not the 0.8 g/kg/day intake and not
+  a limit for children. There is no dialysis flag and no stage.
 
 The age factors are **documented course approximations**, not published clinical
 multipliers for Mifflin-St Jeor. That adult equation is not validated here for
@@ -92,7 +115,10 @@ clinical suitability. The course's age bands also differ from source age bands.
 | --- | --- |
 | `backend/app/database.py` | Declarative base, engine, session factory, table creation |
 | `backend/app/models.py` | Seven tables, relationships, constraints, profile maintenance |
-| `backend/app/targets.py` | Shared deterministic target calculation |
+| `backend/app/targets.py` | Shared deterministic target calculation, including the three condition limits above |
+| `backend/app/dishes.py` | Local spaghetti and adobo rows |
+| `backend/dishes.json` | FNRI values for those two dishes |
+| `backend/app/intake.py` | Eaten-meal totals for one Philippine local date |
 | `backend/app/passwords.py` | Standard-library password hashing |
 | `backend/init_db.py` | Development table-creation command |
 | `backend/seed.py` | Idempotent demo records |

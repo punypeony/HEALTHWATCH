@@ -1,22 +1,21 @@
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ApiError, markMealEaten, scanDependent } from "../api";
+import { Button } from "../components/Button";
+import { Card } from "../components/Card";
 import { Field } from "../components/Field";
+import { RiskBadge } from "../components/RiskBadge";
 import { ScreenStatus } from "../components/ScreenStatus";
-import { placeholder } from "../theme/placeholder";
-import type { DependentTabParamList, RiskLabel, ScanResult } from "../types";
+import { colors } from "../theme/colors";
+import { screen } from "../theme/screen";
+import { typography } from "../theme/typography";
+import type { DependentTabParamList, ScanResult } from "../types";
 import { errorMessage } from "../utils/errors";
 
 const SCAN_COOLDOWN_MS = 1500;
-
-const RISK_COLOR: Record<RiskLabel, string> = {
-  safe: "#1b7f3a",
-  warning: "#c48a00",
-  danger: "#b00020",
-};
 
 type Lookup =
   | { source: "barcode"; value: string }
@@ -162,20 +161,39 @@ export function ScannerScreen({ route }: Props) {
   if (phase.kind === "result") {
     const { result } = phase;
     return (
-      <ScrollView contentContainerStyle={placeholder.screen} keyboardShouldPersistTaps="handled">
-        <Text style={[styles.risk, { color: RISK_COLOR[result.risk_label] }]}>
-          {result.risk_label.toUpperCase()}
-        </Text>
-        <Text style={placeholder.title}>{result.product.name}</Text>
-        <Text>Calories: {result.product.calories}</Text>
-        <Text>Sodium: {result.product.sodium_mg} mg</Text>
-        <Text>Sugar: {result.product.sugar_g} g</Text>
-        {result.saturated_fat_g != null ? <Text>Saturated fat: {result.saturated_fat_g} g</Text> : null}
-        {result.carbohydrate_g != null ? <Text>Carbohydrate: {result.carbohydrate_g} g</Text> : null}
-        {result.protein_g != null ? <Text>Protein: {result.protein_g} g</Text> : null}
-        {result.reasons.map((reason, index) => (
-          <Text key={`${result.meal_log_id}-${index}`}>{reason}</Text>
-        ))}
+      <ScrollView contentContainerStyle={screen.tabScroll} keyboardShouldPersistTaps="handled">
+        <RiskBadge label={result.risk_label} />
+        <Text style={typography.section}>{result.product.name}</Text>
+        <Card>
+          <Text style={typography.label}>Why?</Text>
+          {result.reasons.map((reason, index) => (
+            <Text key={`${result.meal_log_id}-${index}`} style={typography.body}>
+              • {reason}
+            </Text>
+          ))}
+        </Card>
+        <Card>
+          <Text style={[typography.label, { color: colors.calorie }]}>
+            Calories: {result.product.calories}
+          </Text>
+          <Text style={[typography.label, { color: colors.sodium }]}>
+            Sodium: {result.product.sodium_mg} mg
+          </Text>
+          <Text style={[typography.label, { color: colors.sugar }]}>Sugar: {result.product.sugar_g} g</Text>
+          {result.saturated_fat_g != null ? (
+            <Text style={[typography.label, { color: colors.saturatedFat }]}>
+              Saturated fat: {result.saturated_fat_g} g
+            </Text>
+          ) : null}
+          {result.carbohydrate_g != null ? (
+            <Text style={[typography.label, { color: colors.teal }]}>
+              Carbohydrate: {result.carbohydrate_g} g
+            </Text>
+          ) : null}
+          {result.protein_g != null ? (
+            <Text style={[typography.label, { color: colors.forest }]}>Protein: {result.protein_g} g</Text>
+          ) : null}
+        </Card>
         {askingEaten ? (
           <Field
             label="How many grams were eaten?"
@@ -184,52 +202,32 @@ export function ScannerScreen({ route }: Props) {
             keyboardType="decimal-pad"
           />
         ) : null}
-        {eatenNote ? <Text>{eatenNote}</Text> : null}
+        {eatenNote ? <Text style={typography.body}>{eatenNote}</Text> : null}
         {askingEaten ? (
-          <Pressable
-            onPress={() => {
-              void confirmEaten(result.meal_log_id);
-            }}
-            style={placeholder.button}
-          >
-            <Text>Confirm</Text>
-          </Pressable>
+          <Button label="Confirm" onPress={() => void confirmEaten(result.meal_log_id)} />
         ) : (
-          <Pressable
+          <Button
+            label="Eaten"
             onPress={() => {
               setAskingEaten(true);
               setEatenNote(null);
             }}
-            style={placeholder.button}
-          >
-            <Text>Eaten</Text>
-          </Pressable>
+          />
         )}
-        <Pressable onPress={scanAgain} style={placeholder.button}>
-          <Text>Scan again</Text>
-        </Pressable>
+        <Button label="Scan again" variant="secondary" onPress={scanAgain} />
       </ScrollView>
     );
   }
 
   if (phase.kind === "error") {
     return (
-      <ScrollView contentContainerStyle={placeholder.screen} keyboardShouldPersistTaps="handled">
-        <Text style={placeholder.title}>{phase.title}</Text>
-        <Text style={placeholder.error}>{phase.message}</Text>
+      <ScrollView contentContainerStyle={screen.tabScroll} keyboardShouldPersistTaps="handled">
+        <Text style={typography.section}>{phase.title}</Text>
+        <Text style={typography.error}>{phase.message}</Text>
         {phase.canRetry ? (
-          <Pressable
-            onPress={() => {
-              void submitLookup(phase.lookup);
-            }}
-            style={placeholder.button}
-          >
-            <Text>Retry</Text>
-          </Pressable>
+          <Button label="Retry" onPress={() => void submitLookup(phase.lookup)} />
         ) : null}
-        <Pressable onPress={scanAgain} style={placeholder.button}>
-          <Text>Scan again</Text>
-        </Pressable>
+        <Button label="Scan again" variant="secondary" onPress={scanAgain} />
         <ManualEntryForm
           barcode={draft}
           dishName={dishDraft}
@@ -248,26 +246,16 @@ export function ScannerScreen({ route }: Props) {
 
   if (phase.kind === "manual" || !permission.granted) {
     return (
-      <ScrollView contentContainerStyle={placeholder.screen} keyboardShouldPersistTaps="handled">
-        <Text style={placeholder.title}>Scan</Text>
+      <ScrollView contentContainerStyle={screen.tabScroll} keyboardShouldPersistTaps="handled">
         {permission.granted ? (
-          <Text>Enter a barcode if the camera cannot read it.</Text>
+          <Text style={typography.body}>Enter a barcode if the camera cannot read it.</Text>
         ) : (
-          <Text>Camera permission is required to scan. You can enter a barcode instead.</Text>
+          <Text style={typography.body}>Camera permission is required to scan. You can enter a barcode instead.</Text>
         )}
         {permission.granted ? (
-          <Pressable onPress={() => setPhase({ kind: "scan" })} style={placeholder.button}>
-            <Text>Use camera</Text>
-          </Pressable>
+          <Button label="Use camera" onPress={() => setPhase({ kind: "scan" })} />
         ) : (
-          <Pressable
-            onPress={() => {
-              void requestPermission();
-            }}
-            style={placeholder.button}
-          >
-            <Text>Allow camera</Text>
-          </Pressable>
+          <Button label="Allow camera" onPress={() => void requestPermission()} />
         )}
         <ManualEntryForm
           barcode={draft}
@@ -304,10 +292,8 @@ export function ScannerScreen({ route }: Props) {
         }}
       />
       <View style={styles.overlay}>
-        <Text>Point the camera at a barcode.</Text>
-        <Pressable onPress={() => setPhase({ kind: "manual" })} style={placeholder.button}>
-          <Text>Enter barcode manually</Text>
-        </Pressable>
+        <Text style={typography.body}>Point the camera at a barcode.</Text>
+        <Button label="Enter barcode manually" onPress={() => setPhase({ kind: "manual" })} />
       </View>
     </View>
   );
@@ -329,7 +315,7 @@ function ManualEntryForm({
   onDishSubmit: () => void;
 }) {
   return (
-    <View style={placeholder.field}>
+    <Card>
       <Field
         label="Barcode"
         value={barcode}
@@ -337,19 +323,10 @@ function ManualEntryForm({
         keyboardType="number-pad"
         onSubmitEditing={onBarcodeSubmit}
       />
-      <Pressable onPress={onBarcodeSubmit} style={placeholder.button}>
-        <Text>Look up barcode</Text>
-      </Pressable>
-      <Field
-        label="Dish name"
-        value={dishName}
-        onChangeText={onDishChange}
-        onSubmitEditing={onDishSubmit}
-      />
-      <Pressable onPress={onDishSubmit} style={placeholder.button}>
-        <Text>Look up dish</Text>
-      </Pressable>
-    </View>
+      <Button label="Look up barcode" onPress={onBarcodeSubmit} />
+      <Field label="Dish name" value={dishName} onChangeText={onDishChange} onSubmitEditing={onDishSubmit} />
+      <Button label="Look up dish" variant="secondary" onPress={onDishSubmit} />
+    </Card>
   );
 }
 
@@ -362,9 +339,8 @@ const styles = StyleSheet.create({
   },
   overlay: {
     padding: 16,
-    gap: 12,
-  },
-  risk: {
-    fontSize: 22,
+    paddingBottom: 120,
+    gap: 8,
+    backgroundColor: colors.white,
   },
 });

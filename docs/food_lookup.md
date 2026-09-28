@@ -42,8 +42,13 @@ Errors use the existing `ApiError` and HTTP error envelope:
 `DEMO_MODE=true` reads `backend/demo_products.json` by barcode. It does not use
 the network or database cache, so previously cached live data cannot affect it.
 Demo data uses the same OFF-shaped response and normalization function. It is
-not inserted into the live lookup cache. Future scan persistence must explicitly
-store/reuse demo products when creating meal logs.
+not inserted into the live lookup cache during lookup. The scan route stores a
+demo product when it creates the meal log, and reuses that barcode on the next
+scan. A stored row with different nutrition returns `PRODUCT_CACHE_CONFLICT`.
+
+Typed dish names are not part of this lookup. `app/dishes.py` resolves
+`spaghetti` and `adobo` from `backend/dishes.json` whether or not `DEMO_MODE`
+is on. See [scan.md](scan.md).
 
 | Barcode | Product | kcal/100g | Sodium mg/100g | Sugar g/100g |
 | --- | --- | ---: | ---: | ---: |

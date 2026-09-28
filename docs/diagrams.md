@@ -16,22 +16,24 @@ flowchart TD
   caregiver --> viewAlerts[View Alerts]
   caregiver --> acknowledgeAlerts[Acknowledge Alerts]
   caregiver --> weeklySummary[View Weekly Summary]
+  caregiver --> confirmEaten[Confirm grams eaten]
+  caregiver --> dailyIntake[View Daily Intake]
 ```
 
-Register is `POST /auth/register`. Login is `POST /auth/login`. Manage dependents is list, create, update, and delete under `/dependents`. Scan food is the camera or the manual barcode on the Scan tab. History, alerts, acknowledge, and the weekly summary are the other three tabs plus `PATCH /alerts/{id}`.
+Register is `POST /auth/register`. Login is `POST /auth/login`. Manage dependents is list, create, update, and delete under `/dependents`. Scan food is the camera, a manual barcode, or the dish names `spaghetti` and `adobo`. History, alerts, acknowledge, the weekly summary, and daily intake are the other tabs. `PATCH /alerts/{id}` acknowledges an alert. `PATCH /meals/{id}` records grams eaten.
 
 ## 2. Activity
 
-`POST /dependents/{id}/scan` runs the steps below. An allergy match, or a condition conflict above the 0.5 sodium or sugar threshold, assigns `danger` and does not call the tree. Any other case calls the loaded decision tree. `warning` and `danger` insert an alert. `safe` does not.
+`POST /dependents/{id}/scan` runs the steps below. An allergy match, or a condition conflict above half the matching target, assigns `danger` and does not let the tree override that label. The conflict can be hypertension and sodium, diabetic and sugar, diabetic and carbohydrate, high cholesterol and saturated fat, or kidney disease at age 12 or older and protein. Any other case calls the loaded decision tree. `warning` and `danger` insert an alert. `safe` does not. The meal starts uneaten.
 
 ```mermaid
 flowchart TD
-  scanned[Barcode scanned or typed]
-  scanned --> validate[Validate barcode and dietary profile]
-  validate --> fetchProduct[Fetch product]
+  scanned[Barcode, or spaghetti or adobo]
+  scanned --> validate[Validate the one lookup and the dietary profile]
+  validate --> fetchProduct[Fetch barcode product or local dish]
   fetchProduct --> percentages[Calculate percentages]
   percentages --> checks[Check allergies and conditions]
-  checks --> hardRule{Allergy match or condition conflict over 0.5?}
+  checks --> hardRule{Allergy match or condition conflict over half the target?}
   hardRule -->|yes| dangerLabel[Label danger]
   hardRule -->|no| decisionTree[Decision tree prediction]
   dangerLabel --> mealLog[Save meal log]
@@ -47,27 +49,32 @@ Validation, lookup, nutrition, and prediction failures return the standard error
 
 ## 3. Sequence
 
-Ownership is checked before lookup. Demo mode stops at the demo file. Live mode uses the `scanned_products` cache before Open Food Facts.
+Ownership is checked before lookup. A dish name reads `dishes.json` and skips Open Food Facts. For a barcode, demo mode stops at the demo file. Live mode uses the `scanned_products` cache before Open Food Facts.
 
 ```mermaid
 sequenceDiagram
   participant Mobile
   participant FastAPI
   participant FoodLookup as Food Lookup
-  participant Source as Open Food Facts or Demo Data
+  participant Source as Open Food Facts, Demo Data, or Dishes
   participant Classifier as Risk Classifier
   participant PostgreSQL
 
   Mobile->>FastAPI: POST /dependents/{id}/scan with JWT
   FastAPI->>PostgreSQL: Load dependent owned by the token
   PostgreSQL-->>FastAPI: Dependent and dietary profile
-  FastAPI->>FoodLookup: fetch_product(barcode)
-  alt DEMO_MODE true
+  alt dish name
+    FastAPI->>FoodLookup: resolve_dish
+    FoodLookup->>Source: Read dishes.json
+  else DEMO_MODE true
+    FastAPI->>FoodLookup: fetch_product(barcode)
     FoodLookup->>Source: Read demo_products.json
   else Cached barcode
+    FastAPI->>FoodLookup: fetch_product(barcode)
     FoodLookup->>PostgreSQL: Read scanned_products
     PostgreSQL-->>FoodLookup: Cached product
   else Cache miss
+    FastAPI->>FoodLookup: fetch_product(barcode)
     FoodLookup->>Source: GET Open Food Facts product JSON
     Source-->>FoodLookup: Product payload
     FoodLookup->>PostgreSQL: Insert scanned_products
@@ -140,6 +147,8 @@ erDiagram
     int scanned_product_id FK
     text risk_label
     jsonb risk_reasons
+    boolean eaten
+    numeric grams_eaten
     timestamptz created_at
   }
   alerts {
@@ -163,7 +172,7 @@ Check constraints limit age to 0–120, sex to `male` or `female`, risk labels t
 
 ## 5. Deployment
 
-The phone and FastAPI are separate processes. PostgreSQL is the `postgres:16` service in `docker-compose.yml`. The decision tree file is on the same machine as FastAPI and is loaded into that process. Open Food Facts is called only when `DEMO_MODE` is not `true`.
+The phone and FastAPI are separate processes. PostgreSQL is the `postgres:16` service in `docker-compose.yml`. The decision tree file is on the same machine as FastAPI and is loaded into that process. Open Food Facts is called only for a barcode when `DEMO_MODE` is not `true`. Typed dishes stay in `backend/dishes.json`.
 
 ```mermaid
 flowchart TD

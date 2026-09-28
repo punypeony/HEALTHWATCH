@@ -108,3 +108,11 @@ Open **Summary**. After only these three scans the text is:
 `1 danger-level scan this week, mostly sodium-related.`
 
 Counts: 3 total, 1 safe, 1 warning, 1 danger.
+
+## 11. Optional: dish name and intake
+
+These steps are outside the three-barcode demo. They do not change Demo Hypertension.
+
+On Scan, open manual entry and look up `spaghetti`. The product name is Pasta, spaghetti. The same percentage, allergy, condition, and decision-tree steps run. `adobo` is Pork adobo, cnd. Demo Hypertension does not have high cholesterol, so adobo's missing saturated fat does not reject the scan. Any other typed name is not found.
+
+After a result, Eaten asks for grams and Confirm sends `PATCH /meals/{id}`. Intake then includes that meal for today's Philippine date. Scans that were not confirmed stay in History and in the weekly summary, and stay out of Intake.

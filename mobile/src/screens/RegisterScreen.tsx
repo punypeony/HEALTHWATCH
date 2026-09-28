@@ -1,10 +1,14 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { register } from "../api";
+import { Button } from "../components/Button";
 import { Field } from "../components/Field";
-import { placeholder } from "../theme/placeholder";
+import { colors } from "../theme/colors";
+import { radius, spacing } from "../theme/spacing";
+import { typography } from "../theme/typography";
 import type { AuthStackParamList } from "../types";
 import { errorMessage } from "../utils/errors";
 
@@ -53,37 +57,63 @@ export function RegisterScreen({ navigation }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={placeholder.screen} keyboardShouldPersistTaps="handled">
-      <Text style={placeholder.title}>Register</Text>
-      <Field label="Name" value={name} onChangeText={setName} autoCapitalize="words" />
-      <Field
-        label="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      <Field
-        label="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        autoCapitalize="none"
-      />
-      <Text>Use at least 8 characters.</Text>
-      {formError ? <Text style={placeholder.error}>{formError}</Text> : null}
-      <Pressable
-        onPress={() => {
-          void onSubmit();
-        }}
-        style={placeholder.button}
-        disabled={submitting}
-      >
-        {submitting ? <ActivityIndicator /> : <Text>Create account</Text>}
-      </Pressable>
-      <Pressable onPress={() => navigation.navigate("Login")} style={placeholder.button}>
-        <Text>Already have an account</Text>
-      </Pressable>
-    </ScrollView>
+    <SafeAreaView style={styles.fill}>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <View style={styles.sheet}>
+          <Text style={typography.welcome}>Create an account</Text>
+          <Field label="Name" tone="light" value={name} onChangeText={setName} autoCapitalize="words" />
+          <Field
+            label="Email"
+            tone="light"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <Field
+            label="Password"
+            tone="light"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+          />
+          <Text style={styles.note}>Use at least 8 characters.</Text>
+          {formError ? <Text style={typography.error}>{formError}</Text> : null}
+          <Button label="Create account" onPress={() => void onSubmit()} pending={submitting} />
+          <Button
+            label="Already have an account"
+            variant="secondary"
+            onPress={() => navigation.navigate("Login")}
+          />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  fill: {
+    flex: 1,
+    backgroundColor: colors.white,
+  },
+  scroll: {
+    flexGrow: 1,
+    justifyContent: "flex-end",
+  },
+  sheet: {
+    backgroundColor: colors.forest,
+    borderTopWidth: 7,
+    borderTopColor: colors.teal,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xl,
+    gap: spacing.md,
+  },
+  note: {
+    ...typography.body,
+    color: colors.white,
+  },
+});

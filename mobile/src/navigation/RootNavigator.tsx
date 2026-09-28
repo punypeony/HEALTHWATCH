@@ -1,7 +1,8 @@
 import { ActivityIndicator, View } from "react-native";
 
 import { useSession } from "../auth/SessionContext";
-import { placeholder } from "../theme/placeholder";
+import { colors } from "../theme/colors";
+import { screen } from "../theme/screen";
 import { AppNavigator } from "./AppNavigator";
 import { AuthNavigator } from "./AuthNavigator";
 
@@ -10,8 +11,8 @@ export function RootNavigator() {
 
   if (status === "loading") {
     return (
-      <View style={placeholder.centered}>
-        <ActivityIndicator />
+      <View style={[screen.fill, { justifyContent: "center" }]}>
+        <ActivityIndicator color={colors.teal} />
       </View>
     );
   }

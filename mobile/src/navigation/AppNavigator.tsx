@@ -2,6 +2,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Pressable, Text } from "react-native";
 
 import { useSession } from "../auth/SessionContext";
+import { colors } from "../theme/colors";
+import { typography } from "../theme/typography";
 import { DependentFormScreen } from "../screens/DependentFormScreen";
 import { DependentsScreen } from "../screens/DependentsScreen";
 import type { AppStackParamList } from "../types";
@@ -15,14 +17,17 @@ export function AppNavigator() {
   return (
     <Stack.Navigator
       screenOptions={{
+        headerStyle: { backgroundColor: colors.white },
+        headerTintColor: colors.forest,
+        headerTitleStyle: typography.brand,
         headerRight: () => (
           <Pressable
             onPress={() => {
               void logout();
             }}
-            style={{ paddingHorizontal: 8 }}
+            style={{ paddingHorizontal: 8, minHeight: 44, justifyContent: "center" }}
           >
-            <Text>Log out</Text>
+            <Text style={typography.label}>Log out</Text>
           </Pressable>
         ),
       }}

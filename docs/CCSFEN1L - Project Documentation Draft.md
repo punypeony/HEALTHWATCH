@@ -80,13 +80,18 @@ To design and develop a mobile application that helps caregivers manage multiple
 * The system will classify each scanned product as safe, warning, or danger using a locally trained decision tree model, and will explain the classification in plain language.  
 * The system will maintain a history of scanned meals, generate alerts for risky food items, and produce a weekly summary of eating patterns for each dependent.  
 * The system will include an offline demo mode using a small, fixed set of sample products, to support demonstrations without depending on live internet access.
+* The caregiver can type `spaghetti` or `adobo`. Those two names use a local FNRI table. They are not looked up on Open Food Facts.
+* The caregiver can mark a scan as eaten and enter grams. Daily intake sums only those meals. The weekly summary still counts every scan.
+* Optional conditions are Diabetic, Hypertension, High cholesterol, and Kidney disease. A dependent can be saved with none of them checked.
 
 **4.2 Limitations**
 
-* The system's risk classification is limited to sodium, sugar, calories, allergies, and two medical conditions, diabetic and hypertensive status. It does not account for other nutrients or other medical conditions.  
-* The system only scans product barcodes for identification. It does not use Optical Character Recognition (OCR) to read nutrition labels or ingredient text directly, so a product without a recognizable barcode, or one missing from the Open Food Facts database, cannot be scanned or checked.   
-* The system is a support tool, not a medical device. It does not provide medical diagnoses and is not a substitute for professional advice from a doctor or registered dietitian.  
-* The risk assessment is produced by a simple, rule-based decision tree model rather than a full clinical evaluation. Its accuracy is limited by the quality of the rules and training data used to build it, consistent with concerns raised in the literature that many mobile health applications lack rigorous clinical validation.
+* The decision tree still classifies from sodium, sugar, calories, an allergy flag, a condition-conflict flag, and age band. Carbohydrate, saturated fat, and protein are hard rules for the matching condition. They are not tree features, and the saved model was not retrained.
+* Saturated fat is read only for high cholesterol, carbohydrate only for diabetic, and protein only for kidney disease. A missing value fails the scan only when that box is checked. Fiber is not a danger rule. The protein danger rule applies at age 12 or older and uses 1.3 g per kg of body weight per day. It does not apply to children, and there is no dialysis flag or disease stage.
+* The only typed dishes are `spaghetti` and `adobo`. Any other name is not found. Adobo has no saturated-fat value, and neither dish has carbohydrate or protein, so those condition checks reject the dish instead of storing zero.
+* The system does not use Optical Character Recognition or a camera model to identify a plated meal. A barcode still has to be in Open Food Facts, or in the offline demo file when demo mode is on.
+* The system is a support tool, not a medical device. It does not provide medical diagnoses and is not a substitute for professional advice from a doctor or registered dietitian.
+* The risk assessment is produced by a simple decision tree plus the hard rules above, not a full clinical evaluation. Reported test accuracy on the synthetic holdout is 92.90%. That figure is not clinical validation.
 
 # 
 
@@ -105,7 +110,7 @@ To design and develop a mobile application that helps caregivers manage multiple
 
 |  | Description |
 | :---: | ----- |
-| FR-01 | The system shall allow a caregiver to register and log in using a username and password.  |
+| FR-01 | The system shall allow a caregiver to register and log in with an email and a password. The implemented account does not have a separate username. |
 | FR-02 | The system shall allow a caregiver to add, edit, and manage multiple dependents, each with their own profile (age, height, weight, sex, allergies, and conditions).  |
 | FR-03 | The system shall automatically compute a dependent's daily sodium, sugar, and calorie targets whenever their profile is created or updated.  |
 | FR-04 | The system shall allow a caregiver to scan a food product's barcode and retrieve its nutrition information.  |
@@ -114,15 +119,17 @@ To design and develop a mobile application that helps caregivers manage multiple
 | FR-07 | The system shall generate an alert whenever a scanned food is classified as warning or danger.  |
 | FR-08 | The system shall let a caregiver view a dependent's meal history and alerts.  |
 | FR-09 | The system shall generate a weekly summary of a dependent's eating pattern based on their scan history.  |
+| FR-10 | The system shall accept the dish names spaghetti and adobo and run the same classification, meal-log, and alert steps used for a barcode. |
+| FR-11 | The system shall let the caregiver record grams eaten, and shall report daily intake from those meals only. |
 
 **5.3 Non-Functional Requirements**
 
-| Performance | Requirement |
+| Quality | Requirement |
 | ----- | ----- |
-| Security | The system shall return a food safety result within 3 seconds after a barcode is scanned, under normal network conditions.  |
-| Usability | The system shall only allow a caregiver to view or edit the profiles and data of their own registered dependents.  |
-| Reliability | The system shall display results using simple text and clear color codes (green, amber, red) so caregivers can understand them at a glance.  |
-| Performance | The system shall continue to function in offline demo mode using saved sample data if there is no internet connection.  |
+| Performance | The course target is a food-safety result within 3 seconds after a barcode is scanned, under normal network conditions. The implemented Open Food Facts client uses a 10-second timeout. That 3-second line has not been measured for live lookups. |
+| Security | The system shall only allow a caregiver to view or edit the profiles and data of their own registered dependents. |
+| Usability | The system shall display safe, warning, and danger as readable text. History rows use a distinct fill for each label. |
+| Reliability | The system shall continue to function in offline demo mode using saved sample products, and the two typed dishes, if there is no internet connection. |
 
 **5.4 Business Rules**  
 *List the rules that govern how the system operates.*
@@ -131,6 +138,7 @@ To design and develop a mobile application that helps caregivers manage multiple
 2. Every dependent's daily nutrition targets must be calculated by the system; caregivers cannot enter these values manually.  
 3. A food item is automatically marked as "danger" if it contains an ingredient matching one of the dependent's listed allergies, regardless of other nutrition values.  
 4. Every scan result, whether safe, warning, or danger, must be saved to the dependent's meal history for record-keeping.
+5. A new scan is not eaten until the caregiver confirms a gram amount. Daily intake uses those confirmed meals. The weekly summary still counts every scan.
 
 **5.5 Requirements Gathering**  
 *Indicate the method/s used to gather requirements.*  
@@ -147,62 +155,135 @@ To design and develop a mobile application that helps caregivers manage multiple
 
 *Include the appropriate UML diagrams required for the project.*
 
+The diagrams below match the running routes. The same figures are maintained in [diagrams.md](diagrams.md). There is no class diagram in the repository.
+
 **6.1 Use Case Diagram**
 
-**Figure 1\. Use Case Diagram**  
-\[Insert diagram here\]
+The caregiver is the only actor. Register and login are public. Later cases use the JWT.
 
-**Description:**  
-\[Briefly explain the diagram.\]
+```mermaid
+flowchart TD
+  caregiver[Caregiver]
+  caregiver --> registerLogin[Register / Login]
+  caregiver --> manageDependents[Manage Dependents]
+  caregiver --> scanFood[Scan Food or Typed Dish]
+  caregiver --> viewHistory[View History]
+  caregiver --> viewAlerts[View Alerts]
+  caregiver --> acknowledgeAlerts[Acknowledge Alerts]
+  caregiver --> weeklySummary[View Weekly Summary]
+  caregiver --> confirmEaten[Confirm grams eaten]
+  caregiver --> dailyIntake[View Daily Intake]
+```
 
 **6.2 Activity Diagram**
 
-**Figure 2\. Activity Diagram**  
-\[Insert diagram here\]
+```mermaid
+flowchart TD
+  scanned[Barcode, or spaghetti or adobo]
+  scanned --> validate[Validate the one lookup and the dietary profile]
+  validate --> fetchProduct[Fetch barcode product or local dish]
+  fetchProduct --> percentages[Calculate percentages]
+  percentages --> checks[Check allergies and conditions]
+  checks --> hardRule{Allergy match or condition conflict over half the target?}
+  hardRule -->|yes| dangerLabel[Label danger]
+  hardRule -->|no| decisionTree[Decision tree prediction]
+  dangerLabel --> mealLog[Save meal log]
+  decisionTree --> mealLog
+  mealLog --> alert{Warning or danger?}
+  alert -->|yes| createAlert[Create alert]
+  alert -->|no| noAlert[Leave alert empty]
+  createAlert --> result[Return result]
+  noAlert --> result
+```
 
-**Description:**  
-\[Briefly explain the diagram.\]
+An allergy match, or a condition conflict above half the matching target, is danger before the tree. Warning and danger create an alert. The meal starts uneaten.
 
 **6.3 Class Diagram**
 
-**Figure 3\. Class Diagram**  
-\[Insert diagram here\]
+No class diagram has been drawn for this repository. The request and table models are `backend/app/schemas.py` and `backend/app/models.py`.
 
-**Description:**  
-\[Briefly explain the diagram.\]
+**6.4 Sequence Diagram**
 
-**6.4 Other UML Diagrams**  
-*Include other appropriate diagrams when necessary.*  
-*Examples:*
+```mermaid
+sequenceDiagram
+  participant Mobile
+  participant FastAPI
+  participant FoodLookup as Food Lookup
+  participant Source as Open Food Facts, Demo Data, or Dishes
+  participant Classifier as Risk Classifier
+  participant PostgreSQL
 
-* *Sequence Diagram*   
-* *State Diagram*   
-* *Component Diagram* 
+  Mobile->>FastAPI: POST /dependents/{id}/scan with JWT
+  FastAPI->>PostgreSQL: Load dependent owned by the token
+  PostgreSQL-->>FastAPI: Dependent and dietary profile
+  alt dish name
+    FastAPI->>FoodLookup: resolve_dish
+    FoodLookup->>Source: Read dishes.json
+  else DEMO_MODE true
+    FastAPI->>FoodLookup: fetch_product(barcode)
+    FoodLookup->>Source: Read demo_products.json
+  else Cached barcode
+    FastAPI->>FoodLookup: fetch_product(barcode)
+    FoodLookup->>PostgreSQL: Read scanned_products
+  else Cache miss
+    FastAPI->>FoodLookup: fetch_product(barcode)
+    FoodLookup->>Source: GET Open Food Facts product JSON
+    FoodLookup->>PostgreSQL: Insert scanned_products
+  end
+  FoodLookup-->>FastAPI: Name, calories, sodium, sugar, raw response
+  FastAPI->>Classifier: predict_risk
+  Classifier-->>FastAPI: safe, warning, or danger, plus reasons
+  FastAPI->>PostgreSQL: Insert meal log and alert when needed
+  FastAPI-->>Mobile: Scan result JSON
+``` 
 
 # **7\. SYSTEM ARCHITECTURE**
 
 *Present the overall architecture of the system.*
 
-**Figure 4\. System Architecture**  
-\[Insert architecture diagram here\]
+```mermaid
+flowchart TD
+  expo[Expo Mobile]
+  api[FastAPI]
+  db[PostgreSQL]
+  off[Open Food Facts]
+  dishes[Local dishes.json]
+  expo --> api
+  api --> db
+  api --> off
+  api --> dishes
+```
 
-**Description:**  
-\[Briefly explain the major components and how they interact.\]
+The phone is Expo and React Native. FastAPI loads the decision tree in process and talks to PostgreSQL 16. Open Food Facts is used only for a live barcode lookup. Typed dishes and demo mode stay on local files. Detail is in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 # **8\. DATABASE DESIGN**
 
 **8.1 Entity Relationship Diagram**
 
-**Figure 5\. Entity Relationship Diagram**  
-\[Insert ERD here\]
+Caregiver accounts own dependents. Each dependent has one dietary profile. Meal logs point at a cached product. Alerts point at a meal log. Summaries are one row per dependent and week start. `meal_logs.eaten` and `meal_logs.grams_eaten` record a confirmed amount. The full diagram is in [database.md](database.md).
+
+```mermaid
+erDiagram
+    users ||--o{ dependents : owns
+    dependents ||--|| dietary_profiles : has_current
+    dependents ||--o{ meal_logs : records
+    scanned_products ||--o{ meal_logs : references
+    dependents ||--o{ alerts : receives
+    meal_logs ||--o{ alerts : causes
+    dependents ||--o{ summaries : summarizes
+```
 
 **8.2 Database Tables**
 
 | Table | Purpose |
 | ----- | ----- |
-| \[Table 1\] | \[Purpose\] |
-| \[Table 2\] | \[Purpose\] |
-| \[Table 3\] | \[Purpose\] |
+| users | Caregiver name, unique email, and password hash |
+| dependents | Owned person: age, height, weight, and sex |
+| dietary_profiles | Allergies, conditions, and computed calorie, sodium, and sugar targets |
+| scanned_products | Cached barcode or dish nutrition, including the raw JSON |
+| meal_logs | One scan: risk label, reasons, eaten flag, and grams eaten |
+| alerts | Warning or danger message, active or acknowledged |
+| summaries | Templated weekly sentence for one dependent and week start |
 
 # **9\. USER INTERFACE DESIGN**
 
@@ -227,18 +308,18 @@ To design and develop a mobile application that helps caregivers manage multiple
 
 | Tool/Technology | Purpose |
 | ----- | ----- |
-| \[Programming Language\] | \[Purpose\] |
-| \[Database\] | \[Purpose\] |
-| \[IDE/Editor\] | \[Purpose\] |
-| \[Framework/Library\] | \[Purpose\] |
+| Python, FastAPI, SQLAlchemy, Pydantic | API, validation, and database access |
+| PostgreSQL 16 | Application database, through Docker |
+| scikit-learn Decision Tree, joblib | Local risk classifier |
+| Expo, React Native, TypeScript | Caregiver phone app |
+| pytest | Backend tests |
 
-**10.2 Major System Features**  
-*Describe the major features implemented in the system*.
+**10.2 Major System Features**
 
-1. \[Feature 1\]   
-2. \[Feature 2\]   
-3. \[Feature 3\]   
-4. \[Feature 4\] 
+1. Register, login, and JWT ownership of dependents.
+2. Computed calorie, sodium, and sugar targets, plus condition checks for hypertension, diabetic, high cholesterol, and kidney disease.
+3. Barcode scan through Open Food Facts or offline demo products, and typed lookup for spaghetti and adobo.
+4. Meal history, alerts, weekly summary, eaten grams, and daily intake. 
 
 # **11\. TRANSACTION PROCESSING**
 
@@ -247,40 +328,64 @@ To design and develop a mobile application that helps caregivers manage multiple
 Each major transaction should generally demonstrate:  
 **Input → Validation → Processing → Database Update → Confirmation/Output**
 
-**Transaction 1: \[Transaction Name\]**
+**Transaction 1: Food scan**
 
 **Input:**  
-\[Describe the input.\]  
+A barcode of 8–14 digits, or the dish name spaghetti or adobo, for one owned dependent.
+
 **Validation:**  
-\[Describe the validation.\]  
+The JWT caregiver must own the dependent. The body must contain exactly one lookup. A dietary profile must exist. Required nutrition must be present. A condition nutrient is required only when that condition is checked.
+
 **Processing:**  
-\[Describe what the system does.\]  
+Percentages, allergy match, condition conflicts, then the local decision tree when no hard rule forces danger.
+
 **Database Update:**  
-\[Describe the database changes.\]  
+One transaction stores or reuses the product, inserts a meal log with eaten false, and inserts an alert when the label is warning or danger.
+
 **Confirmation/Output:**  
-\[Describe the resulting output.\]  
+The phone shows safe, warning, or danger, the reasons, and calories, sodium, and sugar. Saturated fat, carbohydrate, or protein appears only when that value was checked and is above half its target.
+
 **Screenshot:**  
-\[Insert screenshot\]
+Not inserted in this file.
+
+**Transaction 2: Confirm eaten amount**
+
+**Input:**  
+Meal log id and grams greater than zero.
+
+**Validation:**  
+The meal must belong to a dependent owned by the JWT caregiver.
+
+**Processing:**  
+The grams are stored and the meal is marked eaten.
+
+**Database Update:**  
+`meal_logs.eaten` becomes true and `grams_eaten` is set. Daily intake on the next read includes that meal. The weekly summary already counted the scan.
+
+**Confirmation/Output:**  
+The meal response returns the id, eaten true, grams, and risk label.
 
 # **12\. SOFTWARE TESTING**
 
-**12.1 Test Plan**  
-*Briefly describe how the system was tested.*
+**12.1 Test Plan**
+
+Backend business logic is tested with pytest against PostgreSQL. The mobile project is typechecked with `npx tsc --noEmit`. The offline demo is the barcode script in [DEMO_SCRIPT.md](DEMO_SCRIPT.md).
 
 **12.2 Test Cases and Results**
 
 | Test Case ID | Feature/Transaction | Expected Result | Actual Result | Status |
 | ----- | ----- | ----- | ----- | ----- |
-| TC-01 | \[Feature\] | \[Expected result\] | \[Actual result\] | Pass/Fail |
-| TC-02 | \[Feature\] | \[Expected result\] | \[Actual result\] | Pass/Fail |
-| TC-03 | \[Feature\] | \[Expected result\] | \[Actual result\] | Pass/Fail |
+| TC-01 | Demo barcodes on Demo Hypertension | `2000000000015` safe, `2000000000022` warning, `2000000000039` danger | Covered by the scan tests and the demo script | Pass in the scan suite |
+| TC-02 | Typed dishes | spaghetti and adobo classify; any other name is not found; adobo with high cholesterol is invalid | Covered by the dish scan tests | Pass when those tests were run |
+| TC-03 | Decision tree holdout | Test accuracy at least 90% | 92.90% in [MODEL_EVALUATION.md](MODEL_EVALUATION.md) | Pass |
+| TC-04 | Daily intake carbohydrate limit | API limit matches the unrounded formula inside the default approx tolerance | The API returns 305.66 and the formula is 305.6625 | Fail, see D6 |
 
 **12.3 Defects and Corrective Actions**
 
 | Defect | Corrective Action | Status |
 | ----- | ----- | ----- |
-| \[Problem encountered\] | \[Action taken\] | Resolved/Pending |
-| \[Problem encountered\] | \[Action taken\] | Resolved/Pending |
+| Evaluation file recorded Python 3.14.7 while this machine uses 3.11 | Metrics are compared without treating the Python version string as part of the match | Resolved |
+| Daily intake limit is rounded to two decimal places and one intake test uses a tighter comparison | Not changed yet | Pending |
 
 **12.4 User Acceptance Testing (UAT)**  
 ***When applicable, include the UAT results.***  

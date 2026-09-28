@@ -1,11 +1,16 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { createDependent, getDependent, updateDependent } from "../api";
+import { Button } from "../components/Button";
+import { Card } from "../components/Card";
 import { Field } from "../components/Field";
 import { ScreenStatus } from "../components/ScreenStatus";
-import { placeholder } from "../theme/placeholder";
+import { colors } from "../theme/colors";
+import { radius, spacing } from "../theme/spacing";
+import { screen } from "../theme/screen";
+import { typography } from "../theme/typography";
 import type { AppStackParamList, DietaryProfile, Sex } from "../types";
 import { errorMessage } from "../utils/errors";
 
@@ -209,17 +214,21 @@ export function DependentFormScreen({ navigation, route }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={placeholder.screen} keyboardShouldPersistTaps="handled">
-      <Text style={placeholder.title}>{dependentId ? "Edit dependent" : "Add dependent"}</Text>
-      <Text>
+    <ScrollView contentContainerStyle={screen.scroll} keyboardShouldPersistTaps="handled">
+      <Text style={typography.body}>
         Daily targets are calculated automatically from age, height, weight, sex, and recorded
         conditions. They are not entered by hand.
       </Text>
       {profile ? (
-        <Text>
-          Current daily targets: {profile.daily_calories} kcal, {profile.daily_sodium_mg} mg sodium,{" "}
-          {profile.daily_sugar_g} g sugar.
-        </Text>
+        <Card>
+          <Text style={[typography.label, { color: colors.calorie }]}>
+            {profile.daily_calories} kcal
+          </Text>
+          <Text style={[typography.label, { color: colors.sodium }]}>
+            {profile.daily_sodium_mg} mg sodium
+          </Text>
+          <Text style={[typography.label, { color: colors.sugar }]}>{profile.daily_sugar_g} g sugar</Text>
+        </Card>
       ) : null}
       <Field label="Name" value={name} onChangeText={setName} autoCapitalize="words" />
       <Field label="Age" value={age} onChangeText={setAge} keyboardType="number-pad" />
@@ -235,12 +244,24 @@ export function DependentFormScreen({ navigation, route }: Props) {
         onChangeText={setWeightKg}
         keyboardType="decimal-pad"
       />
-      <View style={placeholder.field}>
-        <Text>Sex</Text>
-        <View style={placeholder.row}>
+      <View style={{ gap: spacing.xs }}>
+        <Text style={typography.label}>Sex</Text>
+        <View style={{ flexDirection: "row", gap: spacing.sm }}>
           {(["male", "female"] as const).map((option) => (
-            <Pressable key={option} onPress={() => setSex(option)} style={placeholder.button}>
-              <Text>{sex === option ? `[${option}]` : option}</Text>
+            <Pressable
+              key={option}
+              onPress={() => setSex(option)}
+              style={{
+                backgroundColor: sex === option ? colors.teal : colors.white,
+                borderWidth: 1,
+                borderColor: colors.teal,
+                borderRadius: radius.pill,
+                minHeight: 44,
+                justifyContent: "center",
+                paddingHorizontal: spacing.md,
+              }}
+            >
+              <Text style={sex === option ? typography.button : typography.buttonDark}>{option}</Text>
             </Pressable>
           ))}
         </View>
@@ -252,45 +273,58 @@ export function DependentFormScreen({ navigation, route }: Props) {
         autoCapitalize="none"
         onSubmitEditing={addAllergy}
       />
-      <Pressable onPress={addAllergy} style={placeholder.button} disabled={submitting}>
-        <Text>Add allergy</Text>
-      </Pressable>
-      <View style={placeholder.row}>
+      <Button label="Add allergy" variant="secondary" onPress={addAllergy} disabled={submitting} />
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
         {allergies.map((allergy) => (
           <Pressable
             key={allergy}
             onPress={() => setAllergies((current) => current.filter((item) => item !== allergy))}
-            style={placeholder.tag}
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: radius.pill,
+              paddingHorizontal: spacing.md,
+              paddingVertical: spacing.sm,
+            }}
           >
-            <Text>{allergy} (remove)</Text>
+            <Text style={typography.body}>{allergy} (remove)</Text>
           </Pressable>
         ))}
       </View>
-      <Pressable onPress={() => setDiabetic((value) => !value)} style={placeholder.button}>
-        <Text>{diabetic ? "[x]" : "[ ]"} Diabetic</Text>
-      </Pressable>
-      <Pressable onPress={() => setHypertension((value) => !value)} style={placeholder.button}>
-        <Text>{hypertension ? "[x]" : "[ ]"} Hypertension</Text>
-      </Pressable>
-      <Pressable onPress={() => setHighCholesterol((value) => !value)} style={placeholder.button}>
-        <Text>{highCholesterol ? "[x]" : "[ ]"} High cholesterol</Text>
-      </Pressable>
-      <Pressable onPress={() => setKidneyDisease((value) => !value)} style={placeholder.button}>
-        <Text>{kidneyDisease ? "[x]" : "[ ]"} Kidney disease</Text>
-      </Pressable>
+      {(
+        [
+          ["Diabetic", diabetic, setDiabetic],
+          ["Hypertension", hypertension, setHypertension],
+          ["High cholesterol", highCholesterol, setHighCholesterol],
+          ["Kidney disease", kidneyDisease, setKidneyDisease],
+        ] as const
+      ).map(([label, checked, setChecked]) => (
+        <Pressable
+          key={label}
+          onPress={() => setChecked((value) => !value)}
+          style={{
+            backgroundColor: checked ? colors.tealSoft : colors.white,
+            borderWidth: 1,
+            borderColor: colors.teal,
+            borderRadius: radius.pill,
+            minHeight: 44,
+            justifyContent: "center",
+            paddingHorizontal: spacing.md,
+          }}
+        >
+          <Text style={checked ? typography.button : typography.buttonDark}>
+            {checked ? "[x]" : "[ ]"} {label}
+          </Text>
+        </Pressable>
+      ))}
       {extraConditions.length > 0 ? (
-        <Text>Other recorded conditions: {extraConditions.join(", ")}</Text>
+        <Text style={typography.body}>Other recorded conditions: {extraConditions.join(", ")}</Text>
       ) : null}
-      {formError ? <Text style={placeholder.error}>{formError}</Text> : null}
-      <Pressable
-        onPress={() => {
-          void onSubmit();
-        }}
-        style={placeholder.button}
-        disabled={submitting}
-      >
-        {submitting ? <ActivityIndicator /> : <Text>{dependentId ? "Save changes" : "Add dependent"}</Text>}
-      </Pressable>
+      {formError ? <Text style={typography.error}>{formError}</Text> : null}
+      <Button
+        label={dependentId ? "Save changes" : "Add dependent"}
+        onPress={() => void onSubmit()}
+        pending={submitting}
+      />
     </ScrollView>
   );
 }

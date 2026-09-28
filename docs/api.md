@@ -51,7 +51,9 @@ local development.
 | GET | `/dependents/{id}/alerts` | Stored active/acknowledged alerts, newest first; `[]` if none |
 | PATCH | `/alerts/{id}` | Accepts only `{ "status": "acknowledged" }`; repeat acknowledgement is safe |
 | GET | `/dependents/{id}/summary/weekly` | Last 7 days of meal logs: counts, common reason, and one templated summary |
-| POST | `/dependents/{id}/scan` | Classify a barcode and save its meal log and optional alert; see [scan contract](scan.md) |
+| GET | `/dependents/{id}/daily-intake` | Eaten meals for one `Asia/Manila` date. Optional `date=YYYY-MM-DD`; omitted means today |
+| PATCH | `/meals/{id}` | Body `{ "grams_eaten": 80 }`. Marks that owned meal eaten. Grams must be greater than zero |
+| POST | `/dependents/{id}/scan` | Classify a barcode or a typed dish and save its meal log and optional alert; see [scan contract](scan.md) |
 
 Create body:
 
@@ -70,8 +72,19 @@ Create body:
 Age is a JSON integer 0–120. Height/weight must be finite positive values fitting
 PostgreSQL `numeric(7,2)` (at most two decimal places). Sex is `male` or `female`.
 Allergy/condition labels are trimmed, lowercased, deduplicated, and cannot be blank.
-Both arrays default to empty on creation. PATCH preserves omitted fields and
-rejects explicit nulls; send `[]` to clear allergies/conditions.
+Both arrays default to empty on creation. A dependent may be saved with no
+conditions. The phone form offers Diabetic, Hypertension, High cholesterol, and
+Kidney disease. PATCH preserves omitted fields and rejects explicit nulls; send
+`[]` to clear allergies/conditions.
+
+Daily intake returns calories, sodium, and sugar for every dependent. Carbohydrate
+is added for `diabetic`, saturated fat for `high cholesterol`, and protein for
+`kidney disease` at age 12 or older. Each nutrient reports consumed amount, limit
+or target, percentage, and whether the total exceeded the limit. Amounts are
+scaled from per-100 g values by `grams_eaten`. A meal that is not marked eaten
+is excluded. If a counted meal is missing a required nutrient, that nutrient is
+`incomplete` instead of being treated as zero. The date is the Philippine local
+day, not the UTC window used by the weekly summary.
 
 `caregiver_id`, all target fields, and other unknown fields are rejected with 422.
 Ownership always comes from the verified token. Normal ORM writes invoke the
