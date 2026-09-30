@@ -70,6 +70,7 @@ def delete_dependent(id: RecordId, session: DbSession, user: CurrentUser):
 def list_meals(id: RecordId, session: DbSession, user: CurrentUser):
     owned_dependent(session, id, user.id)
     return session.scalars(select(MealLog).where(MealLog.dependent_id == id)
+                           .options(selectinload(MealLog.product))
                            .order_by(MealLog.created_at.desc(), MealLog.id.desc())).all()
 
 

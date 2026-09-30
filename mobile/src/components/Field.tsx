@@ -52,7 +52,9 @@ const styles = StyleSheet.create({
   input: {
     ...typography.input,
     backgroundColor: colors.white,
-    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.avatar,
+    borderRadius: radius.card,
     minHeight: 44,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,

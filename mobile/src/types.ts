@@ -74,6 +74,12 @@ export type MealLog = {
   risk_label: RiskLabel;
   risk_reasons: string[];
   created_at: string;
+  product_name: string;
+  barcode: string;
+  calories: number;
+  sodium_mg: number;
+  sugar_g: number;
+  image_url?: string | null;
 };
 
 export type Alert = {
@@ -120,6 +126,14 @@ export type ScanResult = {
   saturated_fat_g?: number | null;
   carbohydrate_g?: number | null;
   protein_g?: number | null;
+  macros?: {
+    fat_g?: number;
+    saturated_fat_g?: number;
+    carbohydrate_g?: number;
+    fiber_g?: number;
+    protein_g?: number;
+  } | null;
+  vitamins?: { name: string; amount: number; unit: string }[] | null;
   serving_grams?: number | null;
 };
 

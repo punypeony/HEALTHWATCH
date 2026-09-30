@@ -1,19 +1,21 @@
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { ApiError, markMealEaten, scanDependent } from "../api";
+import { ApiError, getDailyIntake, markMealEaten, scanDependent } from "../api";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { Field } from "../components/Field";
 import { RiskBadge } from "../components/RiskBadge";
 import { ScreenStatus } from "../components/ScreenStatus";
+import { useFocusedQuery } from "../hooks/useFocusedQuery";
 import { colors } from "../theme/colors";
 import { screen } from "../theme/screen";
 import { typography } from "../theme/typography";
-import type { DependentTabParamList, ScanResult } from "../types";
+import type { DependentTabParamList, IntakeNutrient, ScanResult } from "../types";
 import { errorMessage } from "../utils/errors";
+import { nutritionBasis, twoDecimals } from "../utils/format";
 
 const SCAN_COOLDOWN_MS = 1500;
 
@@ -53,12 +55,16 @@ function failurePhase(error: unknown, lookup: Lookup): ScanPhase {
       canRetry: true,
     };
   }
+  const message = errorMessage(error);
+  const missingCarb = message.startsWith("Carbohydrate per 100 g is missing");
   return {
     kind: "error",
     lookup,
     title: "Scan failed",
-    message: errorMessage(error),
-    canRetry: true,
+    message: missingCarb
+      ? `${message} Spaghetti and pork adobo have no carbohydrate value in the saved table, so a diabetic dependent cannot be classified from them. The value is not stored as zero.`
+      : message,
+    canRetry: !missingCarb,
   };
 }
 
@@ -71,6 +77,7 @@ export function ScannerScreen({ route }: Props) {
   const [askingEaten, setAskingEaten] = useState(false);
   const [gramsDraft, setGramsDraft] = useState("");
   const [eatenNote, setEatenNote] = useState<string | null>(null);
+  const [eatenSaved, setEatenSaved] = useState(false);
   const lastScanAt = useRef(0);
   const busy = useRef(false);
 
@@ -106,6 +113,7 @@ export function ScannerScreen({ route }: Props) {
         lookup.source === "barcode" ? { barcode: lookup.value } : { dish_name: lookup.value },
       );
       setAskingEaten(false);
+      setEatenSaved(false);
       setEatenNote(null);
       setGramsDraft(result.serving_grams != null ? String(result.serving_grams) : "");
       setPhase({ kind: "result", result });
@@ -120,6 +128,7 @@ export function ScannerScreen({ route }: Props) {
     setDraft("");
     setDishDraft("");
     setAskingEaten(false);
+    setEatenSaved(false);
     setEatenNote(null);
     setPhase({ kind: "scan" });
   }
@@ -134,6 +143,7 @@ export function ScannerScreen({ route }: Props) {
     try {
       await markMealEaten(mealId, grams);
       setAskingEaten(false);
+      setEatenSaved(true);
       setEatenNote("Recorded as eaten.");
     } catch (error) {
       setEatenNote(errorMessage(error));
@@ -161,9 +171,22 @@ export function ScannerScreen({ route }: Props) {
   if (phase.kind === "result") {
     const { result } = phase;
     return (
-      <ScrollView contentContainerStyle={screen.tabScroll} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={screen.tabScroll}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+      >
         <RiskBadge label={result.risk_label} />
-        <Text style={typography.section}>{result.product.name}</Text>
+        <Text
+          style={{
+            fontSize: 22,
+            lineHeight: 28,
+            fontWeight: "700",
+            color: colors.ink,
+          }}
+        >
+          {result.product.name}
+        </Text>
         <Card>
           <Text style={typography.label}>Why?</Text>
           {result.reasons.map((reason, index) => (
@@ -173,28 +196,45 @@ export function ScannerScreen({ route }: Props) {
           ))}
         </Card>
         <Card>
+          <Text style={typography.body}>{nutritionBasis(result.product.barcode)}</Text>
           <Text style={[typography.label, { color: colors.calorie }]}>
-            Calories: {result.product.calories}
+            Calories: {twoDecimals(result.product.calories)} kcal
           </Text>
           <Text style={[typography.label, { color: colors.sodium }]}>
-            Sodium: {result.product.sodium_mg} mg
+            Sodium: {twoDecimals(result.product.sodium_mg)} mg
           </Text>
-          <Text style={[typography.label, { color: colors.sugar }]}>Sugar: {result.product.sugar_g} g</Text>
-          {result.saturated_fat_g != null ? (
-            <Text style={[typography.label, { color: colors.saturatedFat }]}>
-              Saturated fat: {result.saturated_fat_g} g
+          <Text style={typography.body}>Sugar: {twoDecimals(result.product.sugar_g)} g</Text>
+          {result.macros?.fat_g != null ? (
+            <Text style={typography.body}>Fat: {twoDecimals(result.macros.fat_g)} g</Text>
+          ) : null}
+          {result.macros?.saturated_fat_g != null ? (
+            <Text style={typography.body}>
+              Saturated fat: {twoDecimals(result.macros.saturated_fat_g)} g
             </Text>
           ) : null}
-          {result.carbohydrate_g != null ? (
-            <Text style={[typography.label, { color: colors.teal }]}>
-              Carbohydrate: {result.carbohydrate_g} g
+          {result.macros?.carbohydrate_g != null ? (
+            <Text style={typography.body}>
+              Carbohydrate: {twoDecimals(result.macros.carbohydrate_g)} g
             </Text>
           ) : null}
-          {result.protein_g != null ? (
-            <Text style={[typography.label, { color: colors.forest }]}>Protein: {result.protein_g} g</Text>
+          {result.macros?.fiber_g != null ? (
+            <Text style={typography.body}>Fiber: {twoDecimals(result.macros.fiber_g)} g</Text>
           ) : null}
+          {result.macros?.protein_g != null ? (
+            <Text style={typography.body}>Protein: {twoDecimals(result.macros.protein_g)} g</Text>
+          ) : null}
+          {result.vitamins?.map((vitamin) => (
+            <Text key={vitamin.name} style={typography.body}>
+              {vitamin.name}: {twoDecimals(vitamin.amount)} {vitamin.unit}
+            </Text>
+          ))}
         </Card>
-        {askingEaten ? (
+        <DailyLimitNote
+          dependentId={dependentId}
+          sodiumMg={result.product.sodium_mg}
+          sugarG={result.product.sugar_g}
+        />
+        {eatenSaved ? null : askingEaten ? (
           <Field
             label="How many grams were eaten?"
             value={gramsDraft}
@@ -203,7 +243,7 @@ export function ScannerScreen({ route }: Props) {
           />
         ) : null}
         {eatenNote ? <Text style={typography.body}>{eatenNote}</Text> : null}
-        {askingEaten ? (
+        {eatenSaved ? null : askingEaten ? (
           <Button label="Confirm" onPress={() => void confirmEaten(result.meal_log_id)} />
         ) : (
           <Button
@@ -221,7 +261,11 @@ export function ScannerScreen({ route }: Props) {
 
   if (phase.kind === "error") {
     return (
-      <ScrollView contentContainerStyle={screen.tabScroll} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={screen.tabScroll}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+      >
         <Text style={typography.section}>{phase.title}</Text>
         <Text style={typography.error}>{phase.message}</Text>
         {phase.canRetry ? (
@@ -246,7 +290,11 @@ export function ScannerScreen({ route }: Props) {
 
   if (phase.kind === "manual" || !permission.granted) {
     return (
-      <ScrollView contentContainerStyle={screen.tabScroll} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={screen.tabScroll}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+      >
         {permission.granted ? (
           <Text style={typography.body}>Enter a barcode if the camera cannot read it.</Text>
         ) : (
@@ -299,6 +347,62 @@ export function ScannerScreen({ route }: Props) {
   );
 }
 
+function limitNote(
+  nutrient: IntakeNutrient | undefined,
+  addition: number,
+  name: string,
+  unit: string,
+): string | null {
+  if (
+    !nutrient ||
+    nutrient.incomplete ||
+    nutrient.consumed == null ||
+    nutrient.limit == null ||
+    nutrient.exceeded == null
+  ) {
+    return null;
+  }
+  if (nutrient.exceeded) {
+    return `Today's ${name} is already above the daily target (${nutrient.consumed} ${unit} of ${nutrient.limit} ${unit}). The label above is for 100 g of this food, not today's running total.`;
+  }
+  if (nutrient.consumed + addition > nutrient.limit) {
+    return `Eating 100 g would put today's ${name} above the daily target (${nutrient.consumed} ${unit} so far, plus ${addition} ${unit} in this food). The label above is still the 100 g classification.`;
+  }
+  return null;
+}
+
+function DailyLimitNote({
+  dependentId,
+  sodiumMg,
+  sugarG,
+}: {
+  dependentId: number;
+  sodiumMg: number;
+  sugarG: number;
+}) {
+  const load = useCallback(() => getDailyIntake(dependentId), [dependentId]);
+  const intake = useFocusedQuery(load);
+  if (intake.status !== "success") {
+    return null;
+  }
+  const notes = [
+    limitNote(intake.data.nutrients.sugar, sugarG, "sugar", "g"),
+    limitNote(intake.data.nutrients.sodium, sodiumMg, "sodium", "mg"),
+  ].filter((note): note is string => note !== null);
+  if (notes.length === 0) {
+    return null;
+  }
+  return (
+    <Card>
+      {notes.map((note) => (
+        <Text key={note} style={typography.body}>
+          {note}
+        </Text>
+      ))}
+    </Card>
+  );
+}
+
 function ManualEntryForm({
   barcode,
   dishName,
@@ -339,7 +443,6 @@ const styles = StyleSheet.create({
   },
   overlay: {
     padding: 16,
-    paddingBottom: 120,
     gap: 8,
     backgroundColor: colors.white,
   },

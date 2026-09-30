@@ -6,6 +6,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_serializer, model_validator
 
+from app.food_lookup import product_image_url
+
 Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200, pattern=r'^[^\x00]+$')]
 Label = Annotated[str, StringConstraints(strip_whitespace=True, to_lower=True, min_length=1, max_length=100, pattern=r'^[^\x00]+$')]
 Measurement = Annotated[Decimal, Field(gt=0, max_digits=7, decimal_places=2, allow_inf_nan=False)]
@@ -107,6 +109,33 @@ class MealOutput(BaseModel):
     risk_label: Literal['safe', 'warning', 'danger']
     risk_reasons: list[str]
     created_at: datetime
+    product_name: str
+    barcode: str
+    calories: float
+    sodium_mg: float
+    sugar_g: float
+    image_url: str | None = None
+
+    @model_validator(mode='before')
+    @classmethod
+    def include_product(cls, value):
+        product = getattr(value, 'product', None)
+        if product is None or isinstance(value, dict):
+            return value
+        return {
+            'id': value.id,
+            'dependent_id': value.dependent_id,
+            'scanned_product_id': value.scanned_product_id,
+            'risk_label': value.risk_label,
+            'risk_reasons': value.risk_reasons,
+            'created_at': value.created_at,
+            'product_name': product.name,
+            'barcode': product.barcode,
+            'calories': product.calories,
+            'sodium_mg': product.sodium_mg,
+            'sugar_g': product.sugar_g,
+            'image_url': product_image_url(product.raw_response),
+        }
 
 
 class AlertOutput(BaseModel):
@@ -209,6 +238,12 @@ class PercentagesOutput(BaseModel):
     calorie_pct: float
 
 
+class VitaminOutput(BaseModel):
+    name: str
+    amount: float
+    unit: str
+
+
 class ScanOutput(BaseModel):
     risk_label: Literal['safe', 'warning', 'danger']
     product: ScanProductOutput
@@ -219,13 +254,15 @@ class ScanOutput(BaseModel):
     saturated_fat_g: float | None = None
     carbohydrate_g: float | None = None
     protein_g: float | None = None
+    macros: dict[str, float] | None = None
+    vitamins: list[VitaminOutput] | None = None
     serving_grams: float | None = None
 
     @model_serializer(mode='wrap')
     def _omit_unused_grams(self, handler):
         data = handler(self)
-        for key in ('saturated_fat_g', 'carbohydrate_g', 'protein_g', 'serving_grams'):
-            if data.get(key) is None:
+        for key in ('saturated_fat_g', 'carbohydrate_g', 'protein_g', 'macros', 'vitamins', 'serving_grams'):
+            if not data.get(key):
                 data.pop(key, None)
         return data
 

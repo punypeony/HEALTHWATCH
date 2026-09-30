@@ -1,10 +1,10 @@
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
-import { useCallback } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { useCallback, useState } from "react";
+import { Image, ScrollView, Text, View } from "react-native";
 
 import { listMeals } from "../api";
 import { Button } from "../components/Button";
-import { RiskBadge, riskFill } from "../components/RiskBadge";
+import { RiskBadge } from "../components/RiskBadge";
 import { ScreenStatus } from "../components/ScreenStatus";
 import { useFocusedQuery } from "../hooks/useFocusedQuery";
 import { colors } from "../theme/colors";
@@ -12,9 +12,38 @@ import { radius, spacing } from "../theme/spacing";
 import { screen } from "../theme/screen";
 import { typography } from "../theme/typography";
 import type { DependentTabParamList } from "../types";
-import { formatWhen } from "../utils/format";
+import { formatWhen, nutritionBasis } from "../utils/format";
 
 type Props = BottomTabScreenProps<DependentTabParamList, "History">;
+
+function ProductPhoto({ uri }: { uri?: string | null }) {
+  const [failed, setFailed] = useState(false);
+  if (!uri || failed) {
+    return (
+      <View
+        style={{
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: colors.avatar,
+        }}
+      />
+    );
+  }
+  return (
+    <Image
+      accessibilityLabel="Product photo"
+      source={{ uri }}
+      onError={() => setFailed(true)}
+      style={{
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: colors.avatar,
+      }}
+    />
+  );
+}
 
 export function HistoryScreen({ route }: Props) {
   const { dependentId } = route.params;
@@ -48,7 +77,9 @@ export function HistoryScreen({ route }: Props) {
         <View
           key={meal.id}
           style={{
-            backgroundColor: riskFill(meal.risk_label),
+            backgroundColor: colors.white,
+            borderWidth: 1,
+            borderColor: colors.avatar,
             borderRadius: radius.card,
             padding: spacing.sm,
             gap: spacing.sm,
@@ -56,16 +87,18 @@ export function HistoryScreen({ route }: Props) {
             alignItems: "center",
           }}
         >
-          <View
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 28,
-              backgroundColor: colors.avatar,
-            }}
-          />
+          <ProductPhoto uri={meal.image_url} />
           <View style={{ flex: 1, gap: spacing.xs }}>
             <RiskBadge label={meal.risk_label} />
+            <Text style={typography.label}>{meal.product_name}</Text>
+            <Text style={typography.body}>{nutritionBasis(meal.barcode)}</Text>
+            <Text style={[typography.body, { color: colors.sodium }]}>
+              Sodium {meal.sodium_mg} mg
+            </Text>
+            <Text style={[typography.body, { color: colors.calorie }]}>
+              Calories {meal.calories} kcal
+            </Text>
+            <Text style={[typography.body, { color: colors.sugar }]}>Sugar {meal.sugar_g} g</Text>
             <Text style={typography.body}>{formatWhen(meal.created_at)}</Text>
             {meal.risk_reasons.map((reason, index) => (
               <Text key={`${meal.id}-${index}`} style={typography.body}>

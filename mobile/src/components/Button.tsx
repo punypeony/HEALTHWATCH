@@ -50,26 +50,26 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   primary: {
-    backgroundColor: colors.teal,
+    backgroundColor: colors.ink,
   },
   secondary: {
     backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: colors.teal,
+    borderColor: colors.avatar,
   },
   save: {
-    backgroundColor: colors.acknowledged,
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: colors.saveBorder,
+    borderColor: colors.avatar,
   },
   danger: {
-    backgroundColor: colors.alertActive,
+    backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.deleteText,
   },
   saveText: {
     ...typography.button,
-    color: colors.forest,
+    color: colors.ink,
   },
   dangerText: {
     ...typography.button,

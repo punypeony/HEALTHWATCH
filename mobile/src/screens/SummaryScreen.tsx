@@ -6,7 +6,6 @@ import { getWeeklySummary } from "../api";
 import { Card } from "../components/Card";
 import { ScreenStatus } from "../components/ScreenStatus";
 import { useFocusedQuery } from "../hooks/useFocusedQuery";
-import { colors } from "../theme/colors";
 import { screen } from "../theme/screen";
 import { typography } from "../theme/typography";
 import type { DependentTabParamList } from "../types";
@@ -37,15 +36,9 @@ export function SummaryScreen({ route }: Props) {
   return (
     <ScrollView contentContainerStyle={screen.tabScroll}>
       <Card>
-        <Text style={[typography.label, { backgroundColor: colors.safe, color: colors.ink }]}>
-          Safe: {data.safe_count}
-        </Text>
-        <Text style={[typography.label, { backgroundColor: colors.warning, color: colors.ink }]}>
-          Warning: {data.warning_count}
-        </Text>
-        <Text style={[typography.label, { backgroundColor: colors.danger, color: colors.ink }]}>
-          Danger: {data.danger_count}
-        </Text>
+        <Text style={typography.body}>Safe: {data.safe_count}</Text>
+        <Text style={typography.body}>Warning: {data.warning_count}</Text>
+        <Text style={typography.body}>Danger: {data.danger_count}</Text>
         <Text style={typography.body}>Total scans: {data.total_scans}</Text>
         <Text style={typography.body}>Common reason: {data.common_reason ?? "None"}</Text>
       </Card>

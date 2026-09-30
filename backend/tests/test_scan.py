@@ -86,7 +86,12 @@ def test_scan_results_and_persistence(client, headers, dependent, db_session, pr
     response = client.post(f'/dependents/{dependent.id}/scan', headers=headers, json={'barcode': BARCODE})
     assert response.status_code == 200, response.text
     data = response.json()
-    assert set(data) == {'risk_label', 'product', 'percentages', 'reasons', 'meal_log_id', 'alert_id'}
+    expected_keys = {'risk_label', 'product', 'percentages', 'reasons', 'meal_log_id', 'alert_id'}
+    if case == 'diabetic':
+        expected_keys.add('macros')
+        assert data['macros'] == {'carbohydrate_g': 1}
+        assert 'carbohydrate_g' not in data
+    assert set(data) == expected_keys
     assert data['risk_label'] == label
     assert data['percentages']['sodium_pct'] == pytest.approx(float(product['sodium_mg'] / profile.daily_sodium_mg))
     assert data['product']['barcode'] == BARCODE and data['reasons']
@@ -185,6 +190,52 @@ def test_structured_allergy_matching(tags, expected):
     assert scan.check_allergy_match([' MILK '], {'product': {'allergens_tags': tags}}) == expected
     assert scan.check_allergy_match(['milk'], {'product': {'allergens': 'en:milk,en:soy'}}) == 1
     assert scan.check_allergy_match(['milk'], {'product': {'ingredients_text': 'milk'}}) == 0
+
+
+def test_display_macros_omit_missing_values():
+    raw = {'product': {'nutriments': {
+        'fat_100g': 18, 'saturated-fat_100g': 5, 'carbohydrates_100g': 40,
+        'fiber_100g': 4, 'proteins_100g': 20, 'unused': -1,
+    }, 'nutrition_data_prepared_per': '100g'}}
+    assert scan.display_macros(raw) == {
+        'fat_g': 18, 'saturated_fat_g': 5, 'carbohydrate_g': 40, 'fiber_g': 4, 'protein_g': 20,
+    }
+    prepared = {'product': {'nutriments': {'fat_prepared_100g': 3}, 'nutrition_data_prepared_per': '100g'}}
+    assert scan.display_macros(prepared) == {'fat_g': 3}
+    assert scan.display_macros({'product': {'nutriments': {'fiber_100g': 0, 'fat_100g': 1.2}}}) == {'fat_g': 1.2}
+    assert scan.display_macros({'product': {'nutriments': {'fiber_100g': -1, 'proteins_100g': True}}}) == {}
+    assert scan.display_macros({'product': {}}) == {}
+    assert scan.display_macros(None) == {}
+
+
+def test_display_vitamins_omit_missing_and_zero():
+    raw = {'product': {'nutriments': {
+        'vitamin-c_100g': 12.345, 'vitamin-a_100g': 0, 'vitamin-b12_100g': 0.0024, 'vitamin-pp_100g': 3.456,
+    }}}
+    assert scan.display_vitamins(raw) == [
+        {'name': 'Vitamin C', 'amount': 12.35, 'unit': 'mg'},
+        {'name': 'Vitamin B3', 'amount': 3.46, 'unit': 'mg'},
+    ]
+    assert scan.display_vitamins({'product': {'nutriments': {}}}) == []
+    assert scan.display_vitamins(None) == []
+
+
+def test_common_allergen_names_match_open_food_facts_tags():
+    assert scan.check_allergy_match(['egg'], {'product': {'allergens_tags': ['en:eggs']}}) == 1
+    assert scan.check_allergy_match(['Gluten/Wheat'], {'product': {'allergens_tags': ['en:gluten']}}) == 1
+    assert scan.check_allergy_match(['wheat'], {'product': {'allergens_tags': ['en:wheat']}}) == 1
+    assert scan.check_allergy_match(['peanut'], {'product': {'allergens_tags': ['en:peanuts']}}) == 1
+    assert scan.check_allergy_match(['soy'], {'product': {'allergens_tags': ['en:soybeans']}}) == 1
+    assert scan.check_allergy_match(['sesame'], {'product': {'allergens_tags': ['en:sesame']}}) == 1
+    assert scan.check_allergy_match(['sesame-seeds'], {'product': {'allergens_tags': ['en:sesame-seeds']}}) == 1
+    assert scan.check_allergy_match(['nuts'], {'product': {'allergens_tags': ['en:nuts']}}) == 1
+    assert scan.check_allergy_match(['fish'], {'product': {'allergens_tags': ['en:fish']}}) == 1
+    assert scan.check_allergy_match(['crustaceans'], {'product': {'allergens_tags': ['en:crustaceans']}}) == 1
+    assert scan.check_allergy_match(['molluscs'], {'product': {'allergens_tags': ['en:molluscs']}}) == 1
+    assert scan.check_allergy_match(['celery'], {'product': {'allergens_tags': ['en:celery']}}) == 1
+    assert scan.check_allergy_match(['mustard'], {'product': {'allergens_tags': ['en:mustard']}}) == 1
+    assert scan.check_allergy_match(['sulphites'], {'product': {'allergens_tags': ['en:sulphur-dioxide-and-sulphites']}}) == 1
+    assert scan.check_allergy_match(['egg'], {'product': {'ingredients_text': 'whole egg'}}) == 0
 
 
 @pytest.mark.parametrize('condition,sodium,sugar,expected', [

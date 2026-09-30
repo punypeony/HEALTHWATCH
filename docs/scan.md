@@ -26,8 +26,14 @@ response construction. Helpers are in `app/scan.py`; inference is in
 `app/ml/predict.py`. A typed name is resolved by `app/dishes.py` and then uses
 the same later steps. Allergen matching uses `product.allergens_tags` (or the
 structured comma-separated `allergens` field), lowercases tokens and removes
-language prefixes. Missing declarations mean no recorded match, not confirmation
-that a food contains no allergens. Ingredients prose is not interpreted.
+language prefixes. The exact names `egg`, `peanut`, and `soy` also match the
+Open Food Facts tags `eggs`, `peanuts`, and `soybeans`. `sesame` matches
+`sesame-seeds`. `sulphites` matches `sulphur-dioxide-and-sulphites`.
+`Gluten/Wheat` matches gluten or wheat. Substring matching is not used, and ingredients prose is not
+interpreted. Missing declarations mean no recorded match, not confirmation
+that a food contains no allergens.
+
+The scan response also includes `macros` when the saved product has fat, saturated fat, carbohydrate, fiber, or protein per 100 g above zero. A missing value, or one that rounds to zero, is left out. Amounts are rounded half up to two decimal places. `vitamins` lists vitamin A, D, E, K, C, and B1, B2, B3, B6, B9, and B12 per 100 g on the same rule, using the Open Food Facts unit (µg or mg). Neither field changes the risk label or the condition checks. The top-level `saturated_fat_g`, `carbohydrate_g`, and `protein_g` fields are still included only when that condition was checked and the value is above half of its daily target.
 
 Ratios are nutrition **per 100g** divided by the dependent's daily targets:
 sodium mg/sodium target, sugar g/sugar target, kcal/calorie target. A ratio of

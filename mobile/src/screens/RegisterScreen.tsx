@@ -1,13 +1,13 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { register } from "../api";
 import { Button } from "../components/Button";
 import { Field } from "../components/Field";
 import { colors } from "../theme/colors";
-import { radius, spacing } from "../theme/spacing";
+import { spacing } from "../theme/spacing";
 import { typography } from "../theme/typography";
 import type { AuthStackParamList } from "../types";
 import { errorMessage } from "../utils/errors";
@@ -63,44 +63,45 @@ export function RegisterScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.fill}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <View style={styles.sheet}>
-          <Text style={typography.welcome}>Welcome aboard, let's get started!</Text>
-          <Field label="Name" tone="light" value={name} onChangeText={setName} autoCapitalize="words" />
-          <Field
-            label="Email"
-            tone="light"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          <Field
-            label="Password"
-            tone="light"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-          />
-          <Field
-            label="Confirm your password"
-            tone="light"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            autoCapitalize="none"
-          />
-          <Text style={styles.note}>Use at least 8 characters.</Text>
-          {formError ? <Text style={typography.error}>{formError}</Text> : null}
-          <Button label="Sign Up" onPress={() => void onSubmit()} pending={submitting} />
-          <Button
-            label="Already have an account"
-            variant="secondary"
-            onPress={() => navigation.navigate("Login")}
-          />
-        </View>
+      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+      >
+        <Text style={typography.section}>Register</Text>
+        <Field label="Name" value={name} onChangeText={setName} autoCapitalize="words" />
+        <Field
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <Field
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+        />
+        <Field
+          label="Confirm your password"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+          autoCapitalize="none"
+        />
+        <Text style={typography.body}>Use at least 8 characters.</Text>
+        {formError ? <Text style={typography.error}>{formError}</Text> : null}
+        <Button label="Sign Up" onPress={() => void onSubmit()} pending={submitting} />
+        <Button
+          label="Already have an account"
+          variant="secondary"
+          onPress={() => navigation.navigate("Login")}
+        />
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -112,21 +113,7 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flexGrow: 1,
-    justifyContent: "flex-end",
-  },
-  sheet: {
-    backgroundColor: colors.forest,
-    borderTopWidth: 7,
-    borderTopColor: colors.teal,
-    borderTopLeftRadius: radius.sheet,
-    borderTopRightRadius: radius.sheet,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.xl,
+    padding: spacing.lg,
     gap: spacing.md,
-  },
-  note: {
-    ...typography.body,
-    color: colors.white,
   },
 });

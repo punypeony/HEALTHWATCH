@@ -1,14 +1,13 @@
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useCallback, useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, Text } from "react-native";
 
 import { acknowledgeAlert, listAlerts } from "../api";
 import { Button } from "../components/Button";
+import { Card } from "../components/Card";
 import { RiskBadge } from "../components/RiskBadge";
 import { ScreenStatus } from "../components/ScreenStatus";
 import { useFocusedQuery } from "../hooks/useFocusedQuery";
-import { colors } from "../theme/colors";
-import { radius, spacing } from "../theme/spacing";
 import { screen } from "../theme/screen";
 import { typography } from "../theme/typography";
 import type { Alert, DependentTabParamList } from "../types";
@@ -79,14 +78,7 @@ function AlertCard({
 }) {
   const acknowledged = alert.status === "acknowledged";
   return (
-    <View
-      style={{
-        backgroundColor: acknowledged ? colors.acknowledged : colors.alertActive,
-        borderRadius: radius.card,
-        padding: spacing.sm,
-        gap: spacing.xs,
-      }}
-    >
+    <Card>
       <Text style={typography.section}>{alert.product_name}</Text>
       <RiskBadge label={alert.risk_label} />
       <Text style={typography.body}>{alert.message}</Text>
@@ -95,6 +87,6 @@ function AlertCard({
       {acknowledged ? null : (
         <Button label="Acknowledge" variant="save" onPress={onAcknowledge} pending={pending} />
       )}
-    </View>
+    </Card>
   );
 }

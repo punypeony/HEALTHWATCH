@@ -4,6 +4,7 @@ import os
 import re
 from decimal import Decimal, DecimalException, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
+from urllib.parse import urlparse
 
 import httpx
 from sqlalchemy import select
@@ -17,6 +18,8 @@ from app.models import ScannedProduct
 
 API_URL = 'https://world.openfoodfacts.org/api/v2/product/{barcode}.json'
 TIMEOUT_SECONDS = 10
+_IMAGE_HOSTS = {'images.openfoodfacts.org', 'static.openfoodfacts.org'}
+_IMAGE_KEYS = ('image_front_small_url', 'image_small_url', 'image_front_url', 'image_url')
 DEMO_PATH = Path(__file__).resolve().parents[1] / 'demo_products.json'
 USER_AGENT = 'FoodConsumptionHealthMonitor/0.1 (student project)'
 
@@ -156,6 +159,28 @@ def read_demo_product(barcode: str) -> dict:
     if barcode not in products:
         raise ApiError(404, 'PRODUCT_NOT_FOUND', 'Product was not found.')
     return normalize_product(barcode, products[barcode])
+
+
+def product_image_url(raw_response) -> str | None:
+    """Front photo already stored in the Open Food Facts payload.
+
+    Dishes and demo rows omit these keys. Only https image hosts from that
+    service are returned, so history never loads an arbitrary address.
+    """
+    product = raw_response.get('product') if isinstance(raw_response, dict) else None
+    if not isinstance(product, dict):
+        return None
+    for key in _IMAGE_KEYS:
+        url = product.get(key)
+        if isinstance(url, str) and _is_product_image_url(url):
+            return url
+    return None
+
+
+def _is_product_image_url(url: str) -> bool:
+    parsed = urlparse(url)
+    return (parsed.scheme == 'https' and parsed.hostname in _IMAGE_HOSTS
+            and parsed.username is None and parsed.password is None and bool(parsed.path))
 
 
 def cached_product_dict(product: ScannedProduct) -> dict:

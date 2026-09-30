@@ -14,7 +14,6 @@ export const screen = StyleSheet.create({
     flexGrow: 1,
     backgroundColor: colors.white,
     padding: spacing.lg,
-    paddingBottom: 120,
     gap: spacing.md,
   },
   fill: {

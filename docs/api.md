@@ -47,7 +47,7 @@ local development.
 | GET | `/dependents/{id}` | One owned dependent with nested `dietary_profile` |
 | PATCH | `/dependents/{id}` | Updates submitted fields and recomputes existing profile |
 | DELETE | `/dependents/{id}` | Deletes owned dependent and its owned records; HTTP 204, no body |
-| GET | `/dependents/{id}/meals` | Stored meal logs, newest first; `[]` if none |
+| GET | `/dependents/{id}/meals` | Stored meal logs, newest first; `[]` if none. `image_url` is the saved Open Food Facts front photo, or null |
 | GET | `/dependents/{id}/alerts` | Stored active/acknowledged alerts, newest first; `[]` if none |
 | PATCH | `/alerts/{id}` | Accepts only `{ "status": "acknowledged" }`; repeat acknowledgement is safe |
 | GET | `/dependents/{id}/summary/weekly` | Last 7 days of meal logs: counts, common reason, and one templated summary |

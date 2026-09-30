@@ -1,5 +1,5 @@
 """Small steps used by the scan route; writes never commit independently."""
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
@@ -42,6 +42,40 @@ def calculate_product_percentages(product, profile) -> dict[str, float]:
     return percentages
 
 
+# Exact Open Food Facts tag names for labels caregivers actually type.
+# This is not substring matching: "milk" still does not match "milk-chocolate".
+_ALLERGEN_ALIASES = {
+    'egg': frozenset({'eggs'}),
+    'eggs': frozenset({'egg'}),
+    'peanut': frozenset({'peanuts'}),
+    'peanuts': frozenset({'peanut'}),
+    'soy': frozenset({'soybeans'}),
+    'soya': frozenset({'soybeans'}),
+    'soybeans': frozenset({'soy', 'soya'}),
+    'sesame': frozenset({'sesame-seeds'}),
+    'sesame-seeds': frozenset({'sesame'}),
+    'sulphites': frozenset({'sulphur-dioxide-and-sulphites', 'sulfites'}),
+    'sulfites': frozenset({'sulphur-dioxide-and-sulphites', 'sulphites'}),
+    'sulphur-dioxide-and-sulphites': frozenset({'sulphites', 'sulfites'}),
+    'mollusks': frozenset({'molluscs'}),
+    'molluscs': frozenset({'mollusks'}),
+}
+
+
+def _allergen_tokens(values) -> set[str]:
+    tokens = set()
+    for value in values:
+        lowered = value.strip().lower()
+        parts = ['gluten', 'wheat'] if lowered == 'gluten/wheat' else [lowered]
+        for part in parts:
+            token = part.split(':', 1)[-1].strip()
+            if not token:
+                continue
+            tokens.add(token)
+            tokens.update(_ALLERGEN_ALIASES.get(token, ()))
+    return tokens
+
+
 def check_allergy_match(allergies, raw_response) -> int:
     """Match structured OFF allergen tags/field, never free-text ingredients.
 
@@ -58,9 +92,7 @@ def check_allergy_match(allergies, raw_response) -> int:
         tags = tags.split(',')
     if not isinstance(tags, list) or any(not isinstance(tag, str) for tag in tags):
         raise ApiError(422, 'PRODUCT_DATA_INVALID', 'Product allergen data is invalid.')
-    wanted = {value.strip().lower().split(':', 1)[-1].strip() for value in allergies}
-    present = {value.strip().lower().split(':', 1)[-1].strip() for value in tags}
-    return int(bool((wanted & present) - {''}))
+    return int(bool(_allergen_tokens(allergies) & _allergen_tokens(tags)))
 
 
 def has_condition(conditions, name: str) -> bool:
@@ -88,6 +120,78 @@ def _nutrient_grams(raw_response, key: str, label: str) -> Decimal:
         return nutrition_number(value)
     except ApiError as exc:
         raise ApiError(422, 'PRODUCT_DATA_INVALID', f'{label} per 100 g is missing or invalid.') from exc
+
+
+_DISPLAY_NUTRIENTS = (
+    ('fat_g', 'fat_100g'),
+    ('saturated_fat_g', 'saturated-fat_100g'),
+    ('carbohydrate_g', 'carbohydrates_100g'),
+    ('fiber_g', 'fiber_100g'),
+    ('protein_g', 'proteins_100g'),
+)
+
+
+# Open Food Facts stores these per 100 g in the unit shown, not in grams.
+_DISPLAY_VITAMINS = (
+    ('Vitamin A', 'vitamin-a_100g', 'µg'),
+    ('Vitamin D', 'vitamin-d_100g', 'µg'),
+    ('Vitamin E', 'vitamin-e_100g', 'mg'),
+    ('Vitamin K', 'vitamin-k_100g', 'µg'),
+    ('Vitamin C', 'vitamin-c_100g', 'mg'),
+    ('Vitamin B1', 'vitamin-b1_100g', 'mg'),
+    ('Vitamin B2', 'vitamin-b2_100g', 'mg'),
+    ('Vitamin B3', 'vitamin-pp_100g', 'mg'),
+    ('Vitamin B6', 'vitamin-b6_100g', 'mg'),
+    ('Vitamin B9', 'vitamin-b9_100g', 'µg'),
+    ('Vitamin B12', 'vitamin-b12_100g', 'µg'),
+)
+
+
+def optional_display_amount(raw_response, key: str) -> float | None:
+    """Per 100 g amount for the scan screen, rounded half up to two decimals.
+
+    Missing values and amounts that round to zero are omitted.
+    """
+    product = raw_response.get('product') if isinstance(raw_response, dict) else None
+    nutrients = product.get('nutriments') if isinstance(product, dict) else None
+    value = nutrients.get(key) if isinstance(nutrients, dict) else None
+    if value is None and isinstance(nutrients, dict) and key.endswith('_100g') and prepared_basis_is_100g(product):
+        value = nutrients.get(key[:-len('_100g')] + '_prepared_100g')
+    if value is None:
+        return None
+    try:
+        number = nutrition_number(value)
+    except ApiError:
+        return None
+    if number > Decimal('99999999.99'):
+        return None
+    rounded = number.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    if rounded == 0:
+        return None
+    return float(rounded)
+
+
+def display_macros(raw_response) -> dict[str, float]:
+    """Fat, saturated fat, carbohydrate, fiber, and protein when above zero.
+
+    These numbers are not condition checks and do not change the risk label.
+    """
+    values = {}
+    for name, key in _DISPLAY_NUTRIENTS:
+        amount = optional_display_amount(raw_response, key)
+        if amount is not None:
+            values[name] = amount
+    return values
+
+
+def display_vitamins(raw_response) -> list[dict]:
+    """Vitamins per 100 g when Open Food Facts sent an amount above zero."""
+    rows = []
+    for name, key, unit in _DISPLAY_VITAMINS:
+        amount = optional_display_amount(raw_response, key)
+        if amount is not None:
+            rows.append({'name': name, 'amount': amount, 'unit': unit})
+    return rows
 
 
 def saturated_fat_per_100g(raw_response) -> Decimal:
@@ -200,4 +304,6 @@ def return_scan_result(product, percentages, prediction, meal, alert,
                       alert_id=alert.id if alert else None,
                       saturated_fat_g=saturated_fat_g, carbohydrate_g=carbohydrate_g,
                       protein_g=protein_g,
+                      macros=display_macros(product.get('raw_response')) or None,
+                      vitamins=display_vitamins(product.get('raw_response')) or None,
                       serving_grams=optional_serving_grams(product.get('raw_response')))

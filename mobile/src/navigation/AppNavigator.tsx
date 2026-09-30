@@ -1,5 +1,5 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { Pressable } from "react-native";
+import { Pressable, Text } from "react-native";
 
 import { useSession } from "../auth/SessionContext";
 import { colors } from "../theme/colors";
@@ -26,13 +26,10 @@ export function AppNavigator() {
             onPress={() => {
               void logout();
             }}
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 18,
-              backgroundColor: colors.avatar,
-            }}
-          />
+            style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: 8 }}
+          >
+            <Text style={typography.body}>Log out</Text>
+          </Pressable>
         ),
       }}
     >

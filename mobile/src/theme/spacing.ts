@@ -1,23 +1,19 @@
-/**
- * HealthWatch.txt is a 1206px-wide frame, three times a 402pt phone.
- * These numbers are that file's padding, gap, and radius divided by 3.
- */
 export const spacing = {
-  xs: 3,
-  sm: 7,
-  md: 13,
-  lg: 20,
-  xl: 27,
-  screen: 13,
-  sheetX: 33,
-  sheetY: 27,
-  input: 20,
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  screen: 16,
+  sheetX: 16,
+  sheetY: 16,
+  input: 12,
 };
 
 export const radius = {
-  pill: 32,
-  sheet: 22,
-  card: 10,
-  tab: 5,
-  avatar: 55,
+  pill: 4,
+  sheet: 0,
+  card: 4,
+  tab: 4,
+  avatar: 4,
 };

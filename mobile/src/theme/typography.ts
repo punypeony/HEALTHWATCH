@@ -1,10 +1,6 @@
 import { colors } from "./colors";
 
-/**
- * Sizes are HealthWatch.txt font sizes divided by 3.
- * The 8pt error sample in that file is raised to 12 so the message stays readable.
- * Inter is named in the file and is not installed, so the platform font is used.
- */
+/** Platform font. Sizes stay large enough to read on a phone. */
 export const typography = {
   brand: {
     fontSize: 21,
@@ -22,7 +18,7 @@ export const typography = {
     fontSize: 16,
     lineHeight: 21,
     fontWeight: "700" as const,
-    color: colors.white,
+    color: colors.ink,
     textAlign: "center" as const,
   },
   button: {

@@ -37,6 +37,15 @@ def response(payload=PAYLOAD, status=200):
     return httpx.Response(status, json=payload, request=httpx.Request('GET', lookup.API_URL.format(barcode=BARCODE)))
 
 
+def test_product_image_url_uses_stored_front_photo():
+    url = 'https://images.openfoodfacts.org/images/products/1/front_en.1.200.jpg'
+    payload = {'product': {'image_front_small_url': url, 'image_url': 'http://images.openfoodfacts.org/x.jpg'}}
+    assert lookup.product_image_url(payload) == url
+    assert lookup.product_image_url({'product': {'image_url': 'https://example.com/a.jpg'}}) is None
+    assert lookup.product_image_url({'product': {}}) is None
+    assert lookup.product_image_url(None) is None
+
+
 def test_success_cache_and_no_repeat_network(cache, offline):
     offline.side_effect = None
     offline.return_value = response()

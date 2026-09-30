@@ -36,7 +36,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: colors.white,
     padding: spacing.lg,
-    paddingBottom: 96,
     gap: spacing.md,
   },
 });

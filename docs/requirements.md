@@ -28,7 +28,7 @@ These rows name behavior that the current code implements. Diagrams are in [DIAG
 | Daily intake | Sums eaten meals for one `Asia/Manila` date, scaled from per-100 g values. Calories, sodium, and sugar always appear. Carbohydrate, saturated fat, and protein appear only for the matching condition. | `backend/app/intake.py`, `mobile/src/screens/IntakeScreen.tsx` |
 | Alert for warning or danger | `create_alert_if_needed` inserts an `active` alert. Safe scans leave `alert_id` null. | `backend/app/scan.py` |
 | Scan response shape | Label, product, percentages, reasons, `meal_log_id`, and `alert_id`. | `backend/app/scan.py`, `backend/app/schemas.py` |
-| View history | `GET /dependents/{id}/meals`, newest first. | `backend/app/routes.py`, `mobile/src/screens/HistoryScreen.tsx` |
+| View history | `GET /dependents/{id}/meals`, newest first, including the stored Open Food Facts photo when one exists. | `backend/app/routes.py`, `mobile/src/screens/HistoryScreen.tsx` |
 | View alerts | `GET /dependents/{id}/alerts` includes product name and risk label. | `backend/app/routes.py`, `mobile/src/screens/AlertsScreen.tsx` |
 | Acknowledge an alert | `PATCH /alerts/{id}` accepts only `acknowledged`. Repeating that status is allowed. | `backend/app/routes.py`, `backend/app/schemas.py` |
 | Weekly summary from stored meals | Last 7 days: total, safe, warning, danger, most common reason, and a templated sentence. One `summaries` row per dependent and window start. | `backend/app/summary.py`, `mobile/src/screens/SummaryScreen.tsx` |

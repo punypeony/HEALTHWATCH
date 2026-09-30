@@ -16,7 +16,55 @@ import { errorMessage } from "../utils/errors";
 
 type Props = NativeStackScreenProps<AppStackParamList, "DependentForm">;
 
-const ALLERGY_SHORTCUTS = ["Milk", "Soy", "Peanut", "Gluten/Wheat", "Egg", "Corn", "Lupin"];
+const ALLERGY_SHORTCUTS = [
+  ["Milk", "milk"],
+  ["Soy", "soy"],
+  ["Peanut", "peanut"],
+  ["Nuts", "nuts"],
+  ["Gluten", "gluten"],
+  ["Wheat", "wheat"],
+  ["Egg", "egg"],
+  ["Fish", "fish"],
+  ["Crustaceans", "crustaceans"],
+  ["Molluscs", "molluscs"],
+  ["Celery", "celery"],
+  ["Mustard", "mustard"],
+  ["Sesame", "sesame-seeds"],
+  ["Sulphites", "sulphur-dioxide-and-sulphites"],
+  ["Lupin", "lupin"],
+  ["Corn", "corn"],
+] as const;
+
+const STORED_ALLERGY: Record<string, string> = {
+  sesame: "sesame-seeds",
+  sulphites: "sulphur-dioxide-and-sulphites",
+  sulfites: "sulphur-dioxide-and-sulphites",
+  mollusks: "molluscs",
+};
+
+function canonicalAllergy(value: string): string {
+  const trimmed = value.trim();
+  return STORED_ALLERGY[trimmed.toLowerCase()] ?? trimmed;
+}
+
+function allergyLabel(value: string): string {
+  const found = ALLERGY_SHORTCUTS.find(([, stored]) => stored === value.trim().toLowerCase());
+  return found ? found[0] : value;
+}
+
+function normalizeAllergies(values: string[]): string[] {
+  const unique: string[] = [];
+  for (const value of values) {
+    const parts = value.trim().toLowerCase() === "gluten/wheat" ? ["gluten", "wheat"] : [value.trim()];
+    for (const part of parts) {
+      const stored = canonicalAllergy(part);
+      if (stored && !unique.some((item) => item.toLowerCase() === stored.toLowerCase())) {
+        unique.push(stored);
+      }
+    }
+  }
+  return unique;
+}
 
 const TRACKED_CONDITIONS = new Set([
   "diabetic",
@@ -96,7 +144,7 @@ export function DependentFormScreen({ navigation, route }: Props) {
         setHeightCm(String(dependent.height_cm));
         setWeightKg(String(dependent.weight_kg));
         setSex(dependent.sex);
-        setAllergies(dependent.dietary_profile.allergies);
+        setAllergies(normalizeAllergies(dependent.dietary_profile.allergies));
         setDiabetic(hasCondition(conditions, "diabetic"));
         setHypertension(hasCondition(conditions, "hypertension"));
         setHighCholesterol(hasCondition(conditions, "high cholesterol"));
@@ -129,11 +177,12 @@ export function DependentFormScreen({ navigation, route }: Props) {
       return;
     }
     setFormError(null);
+    const stored = canonicalAllergy(label);
     setAllergies((current) => {
-      if (current.some((item) => item.toLowerCase() === label.toLowerCase())) {
+      if (current.some((item) => item.toLowerCase() === stored.toLowerCase())) {
         return current;
       }
-      return [...current, label];
+      return [...current, stored];
     });
     setAllergyDraft("");
   }, [allergyDraft]);
@@ -200,13 +249,17 @@ export function DependentFormScreen({ navigation, route }: Props) {
       return;
     }
 
+    const pendingAllergy = allergyDraft.trim();
+    const savedAllergies = normalizeAllergies(
+      pendingAllergy ? [...allergies, pendingAllergy] : allergies,
+    );
     const input = {
       name: trimmedName,
       age: parsedAge,
       height_cm: parsedHeight,
       weight_kg: parsedWeight,
       sex,
-      allergies,
+      allergies: savedAllergies,
       conditions: [
         ...extraConditions,
         ...(diabetic ? ["diabetic"] : []),
@@ -248,7 +301,11 @@ export function DependentFormScreen({ navigation, route }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={screen.scroll} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      contentContainerStyle={screen.scroll}
+      keyboardShouldPersistTaps="handled"
+      automaticallyAdjustKeyboardInsets
+    >
       <Text style={typography.body}>
         Daily targets are calculated automatically from age, height, weight, sex, and recorded
         conditions. They are not entered by hand.
@@ -305,7 +362,7 @@ export function DependentFormScreen({ navigation, route }: Props) {
         <Pressable
           onPress={() => setAllergies([])}
           style={{
-            backgroundColor: allergies.length === 0 ? colors.tealSoft : colors.white,
+            backgroundColor: allergies.length === 0 ? colors.ink : colors.white,
             borderRadius: radius.pill,
             borderWidth: 1,
             borderColor: colors.teal,
@@ -316,14 +373,14 @@ export function DependentFormScreen({ navigation, route }: Props) {
         >
           <Text style={allergies.length === 0 ? typography.button : typography.buttonDark}>No known allergies</Text>
         </Pressable>
-        {ALLERGY_SHORTCUTS.map((label) => {
-          const selected = allergies.some((item) => item.toLowerCase() === label.toLowerCase());
+        {ALLERGY_SHORTCUTS.map(([label, value]) => {
+          const selected = allergies.some((item) => item.toLowerCase() === value);
           return (
             <Pressable
               key={label}
-              onPress={() => toggleAllergy(label)}
+              onPress={() => toggleAllergy(value)}
               style={{
-                backgroundColor: selected ? colors.tealSoft : colors.white,
+                backgroundColor: selected ? colors.ink : colors.white,
                 borderRadius: radius.pill,
                 borderWidth: 1,
                 borderColor: colors.teal,
@@ -346,7 +403,9 @@ export function DependentFormScreen({ navigation, route }: Props) {
       />
       <Button label="Add allergy" variant="secondary" onPress={addAllergy} disabled={submitting || deleting} />
       {allergies.length > 0 ? (
-        <Text style={typography.body}>Selected: {allergies.join(", ")}. Tap a chip again to remove it.</Text>
+        <Text style={typography.body}>
+          Selected: {allergies.map(allergyLabel).join(", ")}. Tap a chip again to remove it.
+        </Text>
       ) : null}
       <Text style={typography.label}>Conditions</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
@@ -362,7 +421,7 @@ export function DependentFormScreen({ navigation, route }: Props) {
             key={label}
             onPress={() => setChecked((value) => !value)}
             style={{
-              backgroundColor: checked ? colors.tealSoft : colors.white,
+              backgroundColor: checked ? colors.ink : colors.white,
               borderWidth: 1,
               borderColor: colors.teal,
               borderRadius: radius.pill,

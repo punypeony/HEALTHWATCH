@@ -2,6 +2,10 @@
 
 `backend/app/food_lookup.py` exposes synchronous `fetch_product(barcode)` and
 returns `barcode`, `name`, `calories`, `sodium_mg`, `sugar_g`, and `raw_response`.
+The stored response can include `image_front_small_url`. History reads that
+https address from `images.openfoodfacts.org` or `static.openfoodfacts.org`.
+It does not download the file into the database. Demo foods and typed dishes
+have no photo.
 Numbers are Decimal values rounded half up to two places, matching PostgreSQL
 numeric columns. Barcode input is a string of 8–14 ASCII digits; leading zeroes
 are preserved. No API key or additional dependency is needed.
