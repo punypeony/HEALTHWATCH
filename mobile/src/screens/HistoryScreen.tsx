@@ -1,8 +1,8 @@
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useCallback, useState } from "react";
-import { Image, ScrollView, Text, View } from "react-native";
+import { Alert, Image, ScrollView, Text, View } from "react-native";
 
-import { listMeals } from "../api";
+import { deleteMeal, deleteMeals, listMeals } from "../api";
 import { Button } from "../components/Button";
 import { RiskBadge } from "../components/RiskBadge";
 import { ScreenStatus } from "../components/ScreenStatus";
@@ -12,9 +12,23 @@ import { radius, spacing } from "../theme/spacing";
 import { screen } from "../theme/screen";
 import { typography } from "../theme/typography";
 import type { DependentTabParamList } from "../types";
-import { formatWhen, nutritionBasis } from "../utils/format";
+import { errorMessage } from "../utils/errors";
+import { formatWhen, nutritionBasis, twoDecimals } from "../utils/format";
 
 type Props = BottomTabScreenProps<DependentTabParamList, "History">;
+
+function historyNutrient(
+  per100g: number,
+  gramsEaten: number | null | undefined,
+  unit: string,
+  name: string,
+): string {
+  if (gramsEaten != null && gramsEaten > 0) {
+    const scaled = Math.round((per100g * gramsEaten) / 100 * 100) / 100;
+    return `${name} ${twoDecimals(scaled)} ${unit} eaten`;
+  }
+  return `${name} ${per100g} ${unit}`;
+}
 
 function ProductPhoto({ uri }: { uri?: string | null }) {
   const [failed, setFailed] = useState(false);
@@ -49,14 +63,43 @@ export function HistoryScreen({ route }: Props) {
   const { dependentId } = route.params;
   const load = useCallback(() => listMeals(dependentId), [dependentId]);
   const meals = useFocusedQuery(load);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  async function removeOne(mealId: number) {
+    try {
+      await deleteMeal(mealId);
+      setDeleteError(null);
+      meals.retry();
+    } catch (error) {
+      setDeleteError(errorMessage(error));
+    }
+  }
+
+  async function removeAll() {
+    try {
+      await deleteMeals(dependentId);
+      setDeleteError(null);
+      meals.retry();
+    } catch (error) {
+      setDeleteError(errorMessage(error));
+    }
+  }
 
   if (meals.status === "loading") {
     return <ScreenStatus title="Scan History" message="Loading meal history..." loading />;
   }
 
-  if (meals.status === "error") {
+  if (deleteError || meals.status === "error") {
     return (
-      <ScreenStatus title="Scan History" message={meals.message} actionLabel="Retry" onAction={meals.retry} />
+      <ScreenStatus
+        title="Scan History"
+        message={deleteError ?? (meals.status === "error" ? meals.message : "")}
+        actionLabel="Retry"
+        onAction={() => {
+          setDeleteError(null);
+          meals.retry();
+        }}
+      />
     );
   }
 
@@ -73,6 +116,16 @@ export function HistoryScreen({ route }: Props) {
 
   return (
     <ScrollView contentContainerStyle={screen.tabScroll}>
+      <Button
+        label="Clear history"
+        variant="danger"
+        onPress={() =>
+          Alert.alert("Clear history", "This removes every scan for this dependent.", [
+            { text: "Cancel", style: "cancel" },
+            { text: "Clear history", onPress: () => void removeAll() },
+          ])
+        }
+      />
       {meals.data.map((meal) => (
         <View
           key={meal.id}
@@ -93,18 +146,30 @@ export function HistoryScreen({ route }: Props) {
             <Text style={typography.label}>{meal.product_name}</Text>
             <Text style={typography.body}>{nutritionBasis(meal.barcode)}</Text>
             <Text style={[typography.body, { color: colors.sodium }]}>
-              Sodium {meal.sodium_mg} mg
+              {historyNutrient(meal.sodium_mg, meal.grams_eaten, "mg", "Sodium")}
             </Text>
             <Text style={[typography.body, { color: colors.calorie }]}>
-              Calories {meal.calories} kcal
+              {historyNutrient(meal.calories, meal.grams_eaten, "kcal", "Calories")}
             </Text>
-            <Text style={[typography.body, { color: colors.sugar }]}>Sugar {meal.sugar_g} g</Text>
+            <Text style={[typography.body, { color: colors.sugar }]}>
+              {historyNutrient(meal.sugar_g, meal.grams_eaten, "g", "Sugar")}
+            </Text>
             <Text style={typography.body}>{formatWhen(meal.created_at)}</Text>
             {meal.risk_reasons.map((reason, index) => (
               <Text key={`${meal.id}-${index}`} style={typography.body}>
                 {reason}
               </Text>
             ))}
+            <Button
+              label="Delete"
+              variant="danger"
+              onPress={() =>
+                Alert.alert("Delete scan", meal.product_name, [
+                  { text: "Cancel", style: "cancel" },
+                  { text: "Delete", onPress: () => void removeOne(meal.id) },
+                ])
+              }
+            />
           </View>
         </View>
       ))}

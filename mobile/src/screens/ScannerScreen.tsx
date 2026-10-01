@@ -1,7 +1,7 @@
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useCallback, useRef, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ApiError, getDailyIntake, markMealEaten, scanDependent } from "../api";
 import { Button } from "../components/Button";
@@ -15,7 +15,7 @@ import { screen } from "../theme/screen";
 import { typography } from "../theme/typography";
 import type { DependentTabParamList, IntakeNutrient, ScanResult } from "../types";
 import { errorMessage } from "../utils/errors";
-import { nutritionBasis, twoDecimals } from "../utils/format";
+import { dailyLimitWarnings, gramsFromServings, nutritionBasis, twoDecimals } from "../utils/format";
 
 const SCAN_COOLDOWN_MS = 1500;
 
@@ -76,6 +76,7 @@ export function ScannerScreen({ route }: Props) {
   const [dishDraft, setDishDraft] = useState("");
   const [askingEaten, setAskingEaten] = useState(false);
   const [gramsDraft, setGramsDraft] = useState("");
+  const [servingsDraft, setServingsDraft] = useState("1");
   const [eatenNote, setEatenNote] = useState<string | null>(null);
   const [eatenSaved, setEatenSaved] = useState(false);
   const lastScanAt = useRef(0);
@@ -115,7 +116,8 @@ export function ScannerScreen({ route }: Props) {
       setAskingEaten(false);
       setEatenSaved(false);
       setEatenNote(null);
-      setGramsDraft(result.serving_grams != null ? String(result.serving_grams) : "");
+      setGramsDraft("");
+      setServingsDraft("1");
       setPhase({ kind: "result", result });
     } catch (error) {
       setPhase(failurePhase(error, lookup));
@@ -124,22 +126,31 @@ export function ScannerScreen({ route }: Props) {
     }
   }
 
+  function beginEaten(result: ScanResult) {
+    setEatenNote(null);
+    if (result.risk_label === "safe") {
+      setAskingEaten(true);
+      return;
+    }
+    const title = result.risk_label === "danger" ? "Danger" : "Warning";
+    Alert.alert(title, [result.product.name, ...result.reasons].join("\n"), [
+      { text: "Cancel", style: "cancel" },
+      { text: "Eat anyway", onPress: () => setAskingEaten(true) },
+    ]);
+  }
+
   function scanAgain() {
     setDraft("");
     setDishDraft("");
     setAskingEaten(false);
     setEatenSaved(false);
     setEatenNote(null);
+    setGramsDraft("");
+    setServingsDraft("1");
     setPhase({ kind: "scan" });
   }
 
-  async function confirmEaten(mealId: number) {
-    const grams = Number(gramsDraft);
-    if (!gramsDraft.trim() || Number.isNaN(grams) || grams <= 0) {
-      setEatenNote("Enter the grams eaten. The amount must be greater than zero.");
-      return;
-    }
-    setEatenNote(null);
+  async function saveEaten(mealId: number, grams: number) {
     try {
       await markMealEaten(mealId, grams);
       setAskingEaten(false);
@@ -148,6 +159,52 @@ export function ScannerScreen({ route }: Props) {
     } catch (error) {
       setEatenNote(errorMessage(error));
     }
+  }
+
+  async function confirmEaten(result: ScanResult) {
+    const servingGrams = result.serving_grams ?? null;
+    const grams =
+      servingGrams != null ? gramsFromServings(servingsDraft, servingGrams) : Number(gramsDraft);
+    const gramsValid =
+      servingGrams != null
+        ? grams != null
+        : Boolean(gramsDraft.trim()) && grams != null && !Number.isNaN(grams) && grams > 0;
+    if (!gramsValid || grams == null) {
+      setEatenNote(
+        servingGrams != null
+          ? "Enter a serving count greater than zero, with at most two decimal places."
+          : "Enter the grams eaten. The amount must be greater than zero.",
+      );
+      return;
+    }
+    setEatenNote(null);
+    let warnings: string[] = [];
+    try {
+      const intake = await getDailyIntake(dependentId);
+      warnings = dailyLimitWarnings(
+        intake.nutrients,
+        {
+          calories: result.product.calories,
+          sodium: result.product.sodium_mg,
+          sugar: result.product.sugar_g,
+          carbohydrates: result.macros?.carbohydrate_g,
+          saturated_fat: result.macros?.saturated_fat_g,
+          protein: result.macros?.protein_g,
+        },
+        grams,
+      );
+    } catch (error) {
+      setEatenNote(errorMessage(error));
+      return;
+    }
+    if (warnings.length === 0) {
+      await saveEaten(result.meal_log_id, grams);
+      return;
+    }
+    Alert.alert("Daily limit", warnings.join("\n"), [
+      { text: "Cancel", style: "cancel" },
+      { text: "Eat anyway", onPress: () => void saveEaten(result.meal_log_id, grams) },
+    ]);
   }
 
   if (!permission) {
@@ -235,24 +292,33 @@ export function ScannerScreen({ route }: Props) {
           sugarG={result.product.sugar_g}
         />
         {eatenSaved ? null : askingEaten ? (
-          <Field
-            label="How many grams were eaten?"
-            value={gramsDraft}
-            onChangeText={setGramsDraft}
-            keyboardType="decimal-pad"
-          />
+          result.serving_grams != null ? (
+            <>
+              <Text style={typography.body}>1 serving = {twoDecimals(result.serving_grams)} g</Text>
+              <Field
+                label="How many servings were eaten?"
+                value={servingsDraft}
+                onChangeText={setServingsDraft}
+                keyboardType="decimal-pad"
+              />
+            </>
+          ) : (
+            <Field
+              label="How many grams were eaten?"
+              value={gramsDraft}
+              onChangeText={setGramsDraft}
+              keyboardType="decimal-pad"
+            />
+          )
         ) : null}
         {eatenNote ? <Text style={typography.body}>{eatenNote}</Text> : null}
         {eatenSaved ? null : askingEaten ? (
-          <Button label="Confirm" onPress={() => void confirmEaten(result.meal_log_id)} />
-        ) : (
           <Button
-            label="Eaten"
-            onPress={() => {
-              setAskingEaten(true);
-              setEatenNote(null);
-            }}
+            label="Confirm"
+            onPress={() => void confirmEaten(result)}
           />
+        ) : (
+          <Button label="Eaten" onPress={() => beginEaten(result)} />
         )}
         <Button label="Scan again" variant="secondary" onPress={scanAgain} />
       </ScrollView>

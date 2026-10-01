@@ -74,6 +74,16 @@ def list_meals(id: RecordId, session: DbSession, user: CurrentUser):
                            .order_by(MealLog.created_at.desc(), MealLog.id.desc())).all()
 
 
+@router.delete('/dependents/{id}/meals', status_code=204)
+def delete_meals(id: RecordId, session: DbSession, user: CurrentUser):
+    owned_dependent(session, id, user.id)
+    meals = session.scalars(select(MealLog).where(MealLog.dependent_id == id)).all()
+    for meal in meals:
+        session.delete(meal)
+    session.commit()
+    return Response(status_code=204)
+
+
 @router.get('/dependents/{id}/alerts', response_model=list[AlertOutput])
 def list_alerts(id: RecordId, session: DbSession, user: CurrentUser):
     owned_dependent(session, id, user.id)
@@ -99,6 +109,13 @@ def get_daily_intake(id: RecordId, session: DbSession, user: CurrentUser,
                      intake_date: Annotated[date | None, Query(alias='date')] = None):
     dependent = owned_dependent(session, id, user.id)
     return daily_intake(session, dependent, intake_date)
+
+
+@router.delete('/meals/{id}', status_code=204)
+def delete_meal(id: RecordId, session: DbSession, user: CurrentUser):
+    session.delete(owned_meal(session, id, user.id))
+    session.commit()
+    return Response(status_code=204)
 
 
 @router.patch('/meals/{id}', response_model=MealEatenOutput)

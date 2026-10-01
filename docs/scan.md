@@ -74,6 +74,28 @@ A new meal starts with `eaten` false and `grams_eaten` null. The caregiver can
 later send `PATCH /meals/{id}` with `grams_eaten` greater than zero. That marks
 the meal eaten. Daily intake uses those rows only.
 
+When the scan response includes `serving_grams`, the eaten step asks how many
+servings were eaten. The count may have two decimal places. The app multiplies
+that count by the gram serving, rounds half up to two decimal places, and stores
+the resulting grams. A product without an explicit gram serving still asks for
+grams directly. Milliliters, cups, and a piece count are not turned into a serving.
+
+Tapping Eaten on a safe result opens that amount field immediately. On a warning
+or danger result, a popup titled Warning or Danger shows the product name and
+the reasons first. Eat anyway then opens the amount field. Cancel leaves the
+result on screen and does not mark the meal eaten. The popup does not appear
+when the scan result first loads.
+
+Confirm compares that amount with today's daily intake. Each nutrient is
+`per 100 g × grams / 100`, rounded half up to two decimals. Calories, sodium,
+and sugar are always checked. Carbohydrate, saturated fat, and protein are
+checked only when daily intake includes that nutrient and this scan has an
+amount. If today's total is already over a target, or this amount would put it
+over, a Daily limit popup offers Eat anyway or Cancel. Eat anyway sends the
+same `PATCH`. Cancel leaves the amount field unchanged and does not save.
+Within every checked target, Confirm records the meal without a popup. The
+risk label stays the 100 g classification.
+
 Meal logs and alerts use one commit and roll back together on any write failure.
 Safe scans have no alert; warning/danger scans create an active alert. Successful
 live lookup caching uses its existing independent transaction, so a cached

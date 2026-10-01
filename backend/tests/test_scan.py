@@ -192,6 +192,17 @@ def test_structured_allergy_matching(tags, expected):
     assert scan.check_allergy_match(['milk'], {'product': {'ingredients_text': 'milk'}}) == 0
 
 
+def test_grams_from_servings():
+    assert scan.grams_from_servings(1.5, 55) == Decimal('82.50')
+    assert scan.grams_from_servings('0.50', Decimal('30')) == Decimal('15.00')
+    with pytest.raises(ApiError):
+        scan.grams_from_servings(Decimal('0.01'), Decimal('0.4'))
+    with pytest.raises(ApiError):
+        scan.grams_from_servings(1, None)
+    with pytest.raises(ApiError):
+        scan.grams_from_servings('1.234', 55)
+
+
 def test_display_macros_omit_missing_values():
     raw = {'product': {'nutriments': {
         'fat_100g': 18, 'saturated-fat_100g': 5, 'carbohydrates_100g': 40,

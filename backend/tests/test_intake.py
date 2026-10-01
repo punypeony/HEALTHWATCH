@@ -10,6 +10,7 @@ from sqlalchemy import select
 from app.auth import create_access_token, get_session
 from app.main import app
 from app.models import Alert, Dependent, MealLog, ScannedProduct, User
+from app.intake import scale_per_100g
 from app.scan import optional_serving_grams
 from app.targets import daily_carbohydrate_g, daily_protein_g, daily_saturated_fat_g
 
@@ -227,6 +228,19 @@ def test_danger_can_be_marked_eaten_without_changing_the_risk(client, headers, d
     assert alert.status == 'active' and alert.meal_log_id == meal.id
     assert intake(client, headers, dependent.id)['nutrients']['sodium']['consumed'] == pytest.approx(
         float(profile.daily_sodium_mg) * 0.4)
+
+
+def test_history_scales_eaten_grams_and_keeps_uneaten_per_100g(client, headers, dependent, db_session):
+    scaled = scale_per_100g(Decimal('400'), Decimal('82.50')).quantize(Decimal('0.01'))
+    assert scaled == Decimal('330.00')
+    product = ScannedProduct(barcode='hist-400', name='Food', calories=400, sodium_mg=200,
+                             sugar_g=10, raw_response={})
+    meal = MealLog(dependent_id=dependent.id, product=product, risk_label='safe', risk_reasons=['ok'])
+    db_session.add(meal)
+    db_session.commit()
+    body = client.get(f'/dependents/{dependent.id}/meals', headers=headers).json()[0]
+    assert body['calories'] == 400 and body['sodium_mg'] == 200 and body['sugar_g'] == 10
+    assert body['grams_eaten'] is None
 
 
 def test_serving_prefill_rejects_milliliters():

@@ -115,6 +115,7 @@ class MealOutput(BaseModel):
     sodium_mg: float
     sugar_g: float
     image_url: str | None = None
+    grams_eaten: float | None = None
 
     @model_validator(mode='before')
     @classmethod
@@ -135,6 +136,7 @@ class MealOutput(BaseModel):
             'sodium_mg': product.sodium_mg,
             'sugar_g': product.sugar_g,
             'image_url': product_image_url(product.raw_response),
+            'grams_eaten': value.grams_eaten,
         }
 
 

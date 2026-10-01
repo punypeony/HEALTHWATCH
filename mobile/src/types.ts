@@ -80,6 +80,7 @@ export type MealLog = {
   sodium_mg: number;
   sugar_g: number;
   image_url?: string | null;
+  grams_eaten?: number | null;
 };
 
 export type Alert = {

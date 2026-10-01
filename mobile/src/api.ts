@@ -136,6 +136,14 @@ export function listMeals(dependentId: number): Promise<MealLog[]> {
   return request<MealLog[]>(`/dependents/${dependentId}/meals`);
 }
 
+export function deleteMeal(mealId: number): Promise<void> {
+  return request<void>(`/meals/${mealId}`, { method: "DELETE" });
+}
+
+export function deleteMeals(dependentId: number): Promise<void> {
+  return request<void>(`/dependents/${dependentId}/meals`, { method: "DELETE" });
+}
+
 export function listAlerts(dependentId: number): Promise<Alert[]> {
   return request<Alert[]>(`/dependents/${dependentId}/alerts`);
 }

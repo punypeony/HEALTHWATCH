@@ -384,7 +384,7 @@ Backend business logic is tested with pytest against PostgreSQL. The mobile proj
 | TC-03 | Decision tree holdout | Test accuracy at least 90% | 92.90% in [MODEL_EVALUATION.md](MODEL_EVALUATION.md) | Pass |
 | TC-04 | Daily intake carbohydrate limit | API limit matches the unrounded formula inside the default approx tolerance | The API returns 305.66 and the formula is 305.6625 | Fail, see D6 |
 
-**12.3 Defects and Corrective Actions**
+**12.3 s and CorreDefectctive Actions**
 
 | Defect | Corrective Action | Status |
 | ----- | ----- | ----- |

@@ -264,6 +264,29 @@ def store_scan_product(session, product) -> ScannedProduct:
     return cached
 
 
+def grams_from_servings(servings, serving_grams) -> Decimal:
+    """Turn a serving count into grams eaten.
+
+    The count may have at most two decimal places. The product is rounded half
+    up to 0.01 g. A missing serving weight is not invented.
+    """
+    if serving_grams is None:
+        raise ApiError(422, 'VALIDATION_ERROR', 'This product has no gram serving size.')
+    try:
+        count = Decimal(str(servings))
+        weight = Decimal(str(serving_grams))
+    except (InvalidOperation, ValueError) as exc:
+        raise ApiError(422, 'VALIDATION_ERROR', 'Enter a serving count greater than zero.') from exc
+    if not count.is_finite() or not weight.is_finite() or count != count.quantize(Decimal('0.01')):
+        raise ApiError(422, 'VALIDATION_ERROR', 'Enter a serving count greater than zero.')
+    if count <= 0 or weight <= 0:
+        raise ApiError(422, 'VALIDATION_ERROR', 'Enter a serving count greater than zero.')
+    grams = (count * weight).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    if grams <= 0:
+        raise ApiError(422, 'VALIDATION_ERROR', 'The amount must be greater than zero.')
+    return grams
+
+
 def optional_serving_grams(raw_response) -> float | None:
     """Prefill only an explicit gram serving. Milliliters and missing sizes stay blank."""
     product = raw_response.get('product') if isinstance(raw_response, dict) else None

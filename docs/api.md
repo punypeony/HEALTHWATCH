@@ -47,12 +47,14 @@ local development.
 | GET | `/dependents/{id}` | One owned dependent with nested `dietary_profile` |
 | PATCH | `/dependents/{id}` | Updates submitted fields and recomputes existing profile |
 | DELETE | `/dependents/{id}` | Deletes owned dependent and its owned records; HTTP 204, no body |
-| GET | `/dependents/{id}/meals` | Stored meal logs, newest first; `[]` if none. `image_url` is the saved Open Food Facts front photo, or null |
+| GET | `/dependents/{id}/meals` | Stored meal logs, newest first; `[]` if none. Calories, sodium, and sugar stay per 100 g. `grams_eaten` is null until the meal is marked eaten. History scales those three nutrients by `grams_eaten / 100` when it is set. `image_url` is the saved Open Food Facts front photo, or null |
+| DELETE | `/dependents/{id}/meals` | Deletes every meal for that owned dependent. Alerts for those meals are removed by the meal foreign key. Cached products stay. HTTP 204, no body |
+| DELETE | `/meals/{id}` | Deletes that owned meal. Its alert is removed by the meal foreign key. The cached product stays. HTTP 204, no body |
 | GET | `/dependents/{id}/alerts` | Stored active/acknowledged alerts, newest first; `[]` if none |
 | PATCH | `/alerts/{id}` | Accepts only `{ "status": "acknowledged" }`; repeat acknowledgement is safe |
 | GET | `/dependents/{id}/summary/weekly` | Last 7 days of meal logs: counts, common reason, and one templated summary |
 | GET | `/dependents/{id}/daily-intake` | Eaten meals for one `Asia/Manila` date. Optional `date=YYYY-MM-DD`; omitted means today |
-| PATCH | `/meals/{id}` | Body `{ "grams_eaten": 80 }`. Marks that owned meal eaten. Grams must be greater than zero |
+| PATCH | `/meals/{id}` | Body `{ "grams_eaten": 80 }`. Marks that owned meal eaten. Grams must be greater than zero. When the scan included `serving_grams`, the app sends servings times that weight, rounded half up to two decimals |
 | POST | `/dependents/{id}/scan` | Classify a barcode or a typed dish and save its meal log and optional alert; see [scan contract](scan.md) |
 
 Create body:

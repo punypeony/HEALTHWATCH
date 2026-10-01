@@ -167,7 +167,7 @@ def test_patch_validation_and_rollback(client, headers, record, payload):
 
 @pytest.mark.parametrize('method,suffix,payload', [
     ('get', '', None), ('patch', '', {'name': 'Stolen'}), ('delete', '', None),
-    ('get', '/meals', None), ('get', '/alerts', None), ('post', '/scan', {'barcode': '12345678'}),
+    ('get', '/meals', None), ('delete', '/meals', None), ('get', '/alerts', None), ('post', '/scan', {'barcode': '12345678'}),
 ])
 def test_ownership_indistinguishable_from_missing(client, db_session, record, method, suffix, payload):
     other = User(name='Other', email='other@example.test', password_hash='unused')
@@ -204,6 +204,47 @@ def test_meals_alerts_and_acknowledgement_ownership(client, headers, record, db_
     assert owned_alert(db_session, alert.id, dependent.caregiver_id) is alert
     with pytest.raises(ApiError):
         owned_alert(db_session, alert.id, other.id)
+
+
+def test_delete_meal_removes_alert_keeps_product_and_rejects_other_caregiver(client, headers, record, db_session):
+    dependent = db_session.get(Dependent, record['id'])
+    product = ScannedProduct(barcode='delete-one', name='Canned Food', calories=1, sodium_mg=2, sugar_g=3, raw_response={})
+    meal = MealLog(dependent=dependent, product=product, risk_label='danger', risk_reasons=['High sodium'])
+    alert = Alert(dependent=dependent, meal_log=meal, message='High sodium')
+    other = User(name='Other', email='delete-other@example.test', password_hash='unused')
+    db_session.add_all([alert, other])
+    db_session.commit()
+    meal_id, alert_id, product_id = meal.id, alert.id, product.id
+    other_headers = {'Authorization': 'Bearer ' + create_access_token(other.id)}
+    assert_error(client.delete(f'/meals/{meal_id}', headers=other_headers), 403, 'FORBIDDEN')
+    assert db_session.get(MealLog, meal_id) is not None
+    response = client.delete(f'/meals/{meal_id}', headers=headers)
+    assert response.status_code == 204 and response.content == b''
+    db_session.expire_all()
+    assert db_session.get(MealLog, meal_id) is None
+    assert db_session.get(Alert, alert_id) is None
+    assert db_session.get(ScannedProduct, product_id) is not None
+
+
+def test_clear_history_leaves_other_dependent_meals(client, headers, record, db_session):
+    other = client.post('/dependents', json=dict(DEPENDENT, name='Other relative'), headers=headers)
+    assert other.status_code == 201, other.text
+    owner = db_session.get(Dependent, record['id'])
+    sibling = db_session.get(Dependent, other.json()['id'])
+    product = ScannedProduct(barcode='delete-many', name='Shared Food', calories=1, sodium_mg=2, sugar_g=3, raw_response={})
+    removed = MealLog(dependent=owner, product=product, risk_label='warning', risk_reasons=['High sodium'])
+    kept = MealLog(dependent=sibling, product=product, risk_label='safe', risk_reasons=['Within target'])
+    removed_alert = Alert(dependent=owner, meal_log=removed, message='High sodium')
+    db_session.add_all([removed_alert, kept])
+    db_session.commit()
+    removed_id, alert_id, kept_id = removed.id, removed_alert.id, kept.id
+    response = client.delete(f"/dependents/{record['id']}/meals", headers=headers)
+    assert response.status_code == 204 and response.content == b''
+    db_session.expire_all()
+    assert db_session.get(MealLog, removed_id) is None
+    assert db_session.get(Alert, alert_id) is None
+    assert db_session.get(MealLog, kept_id) is not None
+    assert db_session.get(ScannedProduct, product.id) is not None
 
 
 def test_framework_errors_have_standard_envelope(client):
