@@ -21,7 +21,7 @@ flowchart TD
   caregiver --> deleteHistory[Delete one scan or clear history]
 ```
 
-Register is `POST /auth/register`. Login is `POST /auth/login`. Manage dependents is list, create, update, and delete under `/dependents`. Scan food is the camera, a manual barcode, or the dish names `spaghetti` and `adobo`. History, alerts, acknowledge, the weekly summary, and daily intake are the other tabs. `PATCH /alerts/{id}` acknowledges an alert. `PATCH /meals/{id}` records grams eaten. **Updated:** when the scan included `serving_grams`, the phone sends servings times that weight. `DELETE /meals/{id}` deletes one owned meal. `DELETE /dependents/{id}/meals` deletes every meal for that dependent. Alerts for those meals are removed by the database. Cached products stay. The new use case is **Delete one scan or clear history**.
+Register is `POST /auth/register`. Login is `POST /auth/login`. `GET /auth/me` returns the signed-in caregiver. Manage dependents is list, create, update, and delete under `/dependents`. Scan food is the camera, a manual barcode, or the dish names `spaghetti` and `adobo`. The floating pill is Home, Overview, Scan, Intake, and Alerts. Overview opens History. Acknowledge, the weekly summary, and daily intake stay on those screens. `PATCH /alerts/{id}` acknowledges an alert. `PATCH /meals/{id}` records grams eaten. **Updated:** when the scan included `serving_grams`, the phone sends servings times that weight. `DELETE /meals/{id}` deletes one owned meal. `DELETE /dependents/{id}/meals` deletes every meal for that dependent. Alerts for those meals are removed by the database. Cached products stay. The new use case is **Delete one scan or clear history**.
 
 ## 2. Activity
 

@@ -73,6 +73,14 @@ def test_registration_and_duplicate(client, db_session):
     assert_error(client.post('/auth/register', json=payload), 409, 'DUPLICATE_EMAIL')
 
 
+def test_current_user_profile(client, headers, owner):
+    response = client.get('/auth/me', headers=headers)
+    assert response.status_code == 200, response.text
+    assert response.json()['name'] == owner.name
+    assert response.json()['email'] == owner.email
+    assert_error(client.get('/auth/me'), 401, 'UNAUTHORIZED')
+
+
 def test_login_and_authenticated_list(client, owner):
     response = client.post('/auth/login', json=dict(email='OWNER@example.test', password=PASSWORD))
     assert response.status_code == 200

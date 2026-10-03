@@ -4,7 +4,7 @@ This describes the code in the repository. There is no chatbot, recommendation e
 
 ## Runtime pieces
 
-The phone app is Expo, React Native, and TypeScript. **Updated:** navigation is React Navigation with one stack for login and register, then a stack for the dependent list, add and edit, and one dependent. That dependent screen uses the default bottom tab bar: Scan, History, Alerts, Summary, and Intake. The stack back button returns to the dependents list. Log out is a text control on the stack header.
+The phone app is Expo, React Native, and TypeScript. Navigation is React Navigation with one stack for login and register, then a stack for the dependent list, add and edit, and one dependent. That dependent screen uses a floating pill: Home, Overview, a raised Scan button, Intake, and Alerts. Home returns to the dependents list. Overview opens the History route. The header shows Health in `#02542D` and Watch in `#00ACF3`. A profile icon on that header shows the caregiver name and Log out.
 
 The phone calls FastAPI over HTTP. `mobile/src/api.ts` attaches `Authorization: Bearer <token>` from device storage (`expo-secure-store` on iOS and Android, `localStorage` on web). The API base URL is `EXPO_PUBLIC_API_URL`, or `http://10.0.2.2:8000` on Android emulators, otherwise `http://127.0.0.1:8000`.
 
@@ -37,7 +37,7 @@ Reasons are fixed sentences in `backend/app/ml/predict.py`. The tree is not insp
 
 ## Accounts and dependents
 
-Register (`POST /auth/register`) stores a PBKDF2-SHA256 password hash and does not return a token. Login (`POST /auth/login`) returns a JWT (HS256, issuer `food-monitor`, audience `food-monitor-mobile`, one hour).
+Register (`POST /auth/register`) stores a PBKDF2-SHA256 password hash and does not return a token. The phone sends the caregiver's name. If `name` is omitted, the stored name is `Caregiver`. Login (`POST /auth/login`) returns a JWT (HS256, issuer `food-monitor`, audience `food-monitor-mobile`, one hour). `GET /auth/me` returns the signed-in user. The phone uses that name in the profile menu.
 
 Creating or updating a dependent writes one `dietary_profiles` row. `compute_daily_targets` in `backend/app/targets.py` sets sodium, sugar, and calories from age, height, weight, sex, and conditions. The caregiver does not enter those three numbers. A `before_flush` hook recomputes them and rejects deleting the profile while the dependent remains.
 

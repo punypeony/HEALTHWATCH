@@ -121,6 +121,10 @@ export function register(input: RegisterRequest): Promise<User> {
   });
 }
 
+export function getCurrentUser(): Promise<User> {
+  return request<User>("/auth/me");
+}
+
 export function login(input: LoginRequest): Promise<TokenResponse> {
   return request<TokenResponse>("/auth/login", {
     method: "POST",

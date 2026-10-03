@@ -10,10 +10,11 @@ load the new routes. Interactive endpoint schemas are at `http://127.0.0.1:8000/
   Returns HTTP 201 with `id`, `name`, `email`, `created_at`. No password/hash is returned.
 - `POST /auth/login`: JSON `{ "email": "caregiver@example.com", "password": "ExamplePassword123!" }`.
   Returns `{ "access_token": "...", "token_type": "bearer" }`.
+- `GET /auth/me`: requires the bearer token. Returns the signed-in user: `id`, `name`, `email`, `created_at`. Missing or invalid tokens return 401 `UNAUTHORIZED`.
 - Set `Authorization: Bearer <access_token>` on all protected requests. Swagger's
   Authorize button accepts the token. Registration does not automatically log in.
 
-Names are trimmed and cannot be empty. Emails are trimmed, lowercased, and checked
+Names are trimmed and cannot be empty when sent. Omitting `name` on register stores `Caregiver`. Emails are trimmed, lowercased, and checked
 for a basic local@domain.suffix shape; this is not email-delivery verification.
 Registration passwords are 8–1024 characters and are never trimmed. Passwords use
 the existing randomly salted PBKDF2-SHA256 format with 600,000 iterations; seeded
@@ -42,6 +43,7 @@ local development.
 
 | Method | Path | Result |
 | --- | --- | --- |
+| GET | `/auth/me` | Signed-in caregiver: `id`, `name`, `email`, `created_at` |
 | GET | `/dependents` | Own dependents, ordered by ID; `[]` if none |
 | POST | `/dependents` | Creates dependent and computed profile; HTTP 201 |
 | GET | `/dependents/{id}` | One owned dependent with nested `dietary_profile` |

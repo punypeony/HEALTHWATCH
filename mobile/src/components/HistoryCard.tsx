@@ -25,7 +25,9 @@ export function HistoryCard({ meal, onDelete }: { meal: MealLog; onDelete: () =>
         </Pressable>
       </View>
       {meal.image_url && !photoFailed ? <Image source={{ uri: meal.image_url }} onError={() => setPhotoFailed(true)} accessibilityLabel="Product photo" style={styles.photo} /> : null}
-      <Text style={typography.body}>{nutritionBasis(meal.barcode)}</Text>
+      <View style={styles.basis}>
+        <Text style={styles.basisText}>{nutritionBasis(meal.barcode)}</Text>
+      </View>
       <Text style={typography.body}>Sodium {amount(meal.sodium_mg, "mg")} · Calories {amount(meal.calories, "kcal")} · Sugar {amount(meal.sugar_g, "g")}</Text>
       {meal.risk_reasons.map((reason, index) => <Text key={index} style={typography.body}>{reason}</Text>)}
       <Text style={typography.body}>{formatWhen(meal.created_at)}</Text>
@@ -39,4 +41,19 @@ const styles = StyleSheet.create({
   delete: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
   deleteCircle: { width: 26, height: 26, borderWidth: 1, borderRadius: 13, alignItems: "center", justifyContent: "center" },
   photo: { width: 56, height: 56, borderRadius: 10 },
+  basis: {
+    alignSelf: "flex-start",
+    backgroundColor: "#E8F6EE",
+    borderColor: "#027A48",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  basisText: {
+    color: "#02542D",
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: "700",
+  },
 });

@@ -240,7 +240,9 @@ export function ScannerScreen({ route }: Props) {
       >
         <ResultCard result={result} />
         <Card>
-          <Text style={typography.body}>{nutritionBasis(result.product.barcode)}</Text>
+          <View style={styles.basis}>
+            <Text style={styles.basisText}>{nutritionBasis(result.product.barcode)}</Text>
+          </View>
           <Text style={[typography.label, { color: colors.calorie }]}>
             Calories: {twoDecimals(result.product.calories)} kcal
           </Text>
@@ -281,7 +283,9 @@ export function ScannerScreen({ route }: Props) {
         {eatenSaved ? null : askingEaten ? (
           result.serving_grams != null ? (
             <>
-              <Text style={typography.body}>1 serving = {twoDecimals(result.serving_grams)} g</Text>
+              <View style={styles.basis}>
+                <Text style={styles.basisText}>1 serving = {twoDecimals(result.serving_grams)} g</Text>
+              </View>
               <Field
                 label="How many servings were eaten?"
                 value={servingsDraft}
@@ -475,5 +479,20 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 8,
     backgroundColor: colors.card,
+  },
+  basis: {
+    alignSelf: "flex-start",
+    backgroundColor: "#E8F6EE",
+    borderColor: "#027A48",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  basisText: {
+    color: "#02542D",
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: "700",
   },
 });

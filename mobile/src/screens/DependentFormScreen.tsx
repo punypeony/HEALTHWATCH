@@ -2,7 +2,7 @@ import { Screen } from "../components/Screen";
 import { NavigationBar } from "../components/NavigationBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 
 import { createDependent, deleteDependent, getDependent, updateDependent } from "../api";
@@ -118,7 +118,6 @@ export function DependentFormScreen({ navigation, route }: Props) {
   const [weightKg, setWeightKg] = useState("");
   const [sex, setSex] = useState<Sex | null>(null);
   const [allergies, setAllergies] = useState<string[]>([]);
-  const [allergyDraft, setAllergyDraft] = useState("");
   const [diabetic, setDiabetic] = useState(false);
   const [hypertension, setHypertension] = useState(false);
   const [highCholesterol, setHighCholesterol] = useState(false);
@@ -170,26 +169,6 @@ export function DependentFormScreen({ navigation, route }: Props) {
       cancelled = true;
     };
   }, [attempt, dependentId]);
-
-  const addAllergy = useCallback(() => {
-    const label = allergyDraft.trim();
-    if (!label) {
-      return;
-    }
-    if (label.length > 100) {
-      setFormError("Allergy labels must be 100 characters or fewer.");
-      return;
-    }
-    setFormError(null);
-    const stored = canonicalAllergy(label);
-    setAllergies((current) => {
-      if (current.some((item) => item.toLowerCase() === stored.toLowerCase())) {
-        return current;
-      }
-      return [...current, stored];
-    });
-    setAllergyDraft("");
-  }, [allergyDraft]);
 
   function toggleAllergy(label: string) {
     setAllergies((current) => {
@@ -253,10 +232,7 @@ export function DependentFormScreen({ navigation, route }: Props) {
       return;
     }
 
-    const pendingAllergy = allergyDraft.trim();
-    const savedAllergies = normalizeAllergies(
-      pendingAllergy ? [...allergies, pendingAllergy] : allergies,
-    );
+    const savedAllergies = normalizeAllergies(allergies);
     const input = {
       name: trimmedName,
       age: parsedAge,
@@ -406,14 +382,6 @@ export function DependentFormScreen({ navigation, route }: Props) {
           );
         })}
       </View>
-      <Field
-        label="Other allergy"
-        value={allergyDraft}
-        onChangeText={setAllergyDraft}
-        autoCapitalize="none"
-        onSubmitEditing={addAllergy}
-      />
-      <Button label="Add allergy" variant="secondary" onPress={addAllergy} disabled={submitting || deleting} />
       {allergies.length > 0 ? (
         <Text style={typography.body}>
           Selected: {allergies.map(allergyLabel).join(", ")}. Tap a chip again to remove it.
@@ -445,7 +413,7 @@ export function DependentFormScreen({ navigation, route }: Props) {
               paddingHorizontal: spacing.md,
             }}
           >
-            <Text style={[typography.buttonDark, checked && { color: colors.forest, fontWeight: "700" }]}>{checked ? "✓ " : "○ "}{label}</Text>
+            <Text style={[typography.buttonDark, checked && { color: colors.forest, fontWeight: "700" }]}>{label}</Text>
           </Pressable>
         ))}
       </View>

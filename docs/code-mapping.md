@@ -3,7 +3,7 @@
 | Path | Role |
 | --- | --- |
 | `backend/app/main.py` | FastAPI app, error handlers, model load on startup |
-| `backend/app/routes.py` | **Updated:** auth, dependents, meals, meal delete, alerts, daily intake, weekly summary, scan |
+| `backend/app/routes.py` | Auth, including `GET /auth/me`, dependents, meals, meal delete, alerts, daily intake, weekly summary, scan |
 | `backend/app/auth.py` | Registration, login, JWT |
 | `backend/app/passwords.py` | Password hashing |
 | `backend/app/dependents.py` | Owned dependent and alert operations, target recompute |
@@ -26,9 +26,11 @@
 | `backend/seed.py` | Demo caregiver, two dependents, and three danger scans |
 | `mobile/App.tsx` | Navigation and session providers |
 | `mobile/src/api.ts` | HTTP client and JWT header |
-| `mobile/src/auth/SessionContext.tsx` | Login, logout, stored session |
+| `mobile/src/auth/SessionContext.tsx` | Login, logout, stored session, and the caregiver name from `GET /auth/me` |
 | `mobile/src/screens/LoginScreen.tsx` | Login |
-| `mobile/src/screens/RegisterScreen.tsx` | Registration |
+| `mobile/src/screens/RegisterScreen.tsx` | Registration: name, email, password, and confirmation |
+| `mobile/src/components/AppHeader.tsx` | HealthWatch title and profile menu with name and Log out |
+| `mobile/src/components/NavigationBar.tsx` | Floating pill: Home, Overview, raised Scan, Intake, Alerts |
 | `mobile/src/screens/DependentsScreen.tsx` | Dependent list |
 | `mobile/src/screens/DependentFormScreen.tsx` | Add and edit dependent |
 | `mobile/src/screens/ScannerScreen.tsx` | **Updated:** camera scan, manual barcode, dish name, result, warning or danger prompt, servings or grams, daily-limit prompt |
@@ -36,5 +38,6 @@
 | `mobile/src/screens/AlertsScreen.tsx` | Alerts and acknowledgement |
 | `mobile/src/screens/SummaryScreen.tsx` | Weekly counts and sentence |
 | `mobile/src/screens/IntakeScreen.tsx` | Daily intake |
-| `mobile/src/navigation/DependentTabs.tsx` | **Updated:** Scan, History, Alerts, Summary, and Intake on the default tab bar |
+| `mobile/src/navigation/DependentTabs.tsx` | Dependent tabs. History stays a route. The visible bar is the floating pill |
+| `mobile/src/navigation/HealthTabBar.tsx` | Connects the pill to those tab routes |
 | `mobile/src/theme/` | Colors, type, and spacing used by the screens |

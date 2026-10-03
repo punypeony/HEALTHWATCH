@@ -46,6 +46,7 @@ HEALTHWATCH/
 │   │   ├── test_intake.py
 │   │   ├── test_models.py
 │   │   ├── test_predict.py
+│   │   ├── test_registration_input.py
 │   │   ├── test_risk_training.py
 │   │   ├── test_scan.py
 │   │   ├── test_summary.py
@@ -94,18 +95,41 @@ HEALTHWATCH/
 │   │   │   ├── SessionContext.tsx
 │   │   │   └── tokenStorage.ts
 │   │   ├── components/
+│   │   │   ├── ActionBar.tsx
+│   │   │   ├── AlertCard.tsx
+│   │   │   ├── AlertStatus.tsx
+│   │   │   ├── AppHeader.tsx
+│   │   │   ├── AuthLayout.tsx
+│   │   │   ├── AuthSwitch.tsx
+│   │   │   ├── BottomFade.tsx
 │   │   │   ├── Button.tsx
 │   │   │   ├── Card.tsx
+│   │   │   ├── DependentCard.tsx
+│   │   │   ├── DependentIdentity.tsx
+│   │   │   ├── DesignIcon.tsx
 │   │   │   ├── Field.tsx
+│   │   │   ├── HistoryCard.tsx
+│   │   │   ├── IntakeCard.tsx
+│   │   │   ├── NavigationBar.tsx
+│   │   │   ├── NutritionTile.tsx
+│   │   │   ├── OverlayInsets.tsx
+│   │   │   ├── OverviewCard.tsx
+│   │   │   ├── ProfileAvatar.tsx
+│   │   │   ├── QueryRefreshNotice.tsx
+│   │   │   ├── ResultCard.tsx
 │   │   │   ├── RiskBadge.tsx
+│   │   │   ├── ScannerEntry.tsx
+│   │   │   ├── Screen.tsx
 │   │   │   └── ScreenStatus.tsx
 │   │   ├── hooks/
 │   │   │   ├── useFocusedQuery.ts
-│   │   │   └── useHealthCheck.ts
+│   │   │   ├── useHealthCheck.ts
+│   │   │   └── useProfilePhoto.ts
 │   │   ├── navigation/
 │   │   │   ├── AppNavigator.tsx
 │   │   │   ├── AuthNavigator.tsx
 │   │   │   ├── DependentTabs.tsx
+│   │   │   ├── HealthTabBar.tsx
 │   │   │   └── RootNavigator.tsx
 │   │   ├── screens/
 │   │   │   ├── AlertsScreen.tsx
@@ -122,11 +146,14 @@ HEALTHWATCH/
 │   │   │   ├── colors.ts
 │   │   │   ├── screen.ts
 │   │   │   ├── spacing.ts
-│   │   │   └── typography.ts
+│   │   │   ├── typography.ts
+│   │   │   └── wallpaper.ts
 │   │   ├── utils/
 │   │   │   ├── apiBaseUrl.ts
 │   │   │   ├── errors.ts
-│   │   │   └── format.ts
+│   │   │   ├── format.ts
+│   │   │   ├── profilePhoto.ts
+│   │   │   └── queryCache.ts
 │   │   ├── api.ts
 │   │   └── types.ts
 │   ├── .env.local

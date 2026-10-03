@@ -39,6 +39,11 @@ def login(data: LoginInput, session: DbSession):
     return TokenOutput(access_token=create_access_token(user.id))
 
 
+@router.get('/auth/me', response_model=UserOutput)
+def current_user(user: CurrentUser):
+    return user
+
+
 @router.get('/dependents', response_model=list[DependentOutput])
 def list_dependents(session: DbSession, user: CurrentUser):
     return session.scalars(select(Dependent).where(Dependent.caregiver_id == user.id).order_by(Dependent.id)).all()

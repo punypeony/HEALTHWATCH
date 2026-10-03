@@ -120,7 +120,7 @@ The system is caregiver-facing. The dependent is a data subject, not an account 
 
 |  | Description |
 | :---: | ----- |
-| FR-01 | The system shall allow a caregiver to register and log in with an email and a password. The implemented account does not have a separate username. |
+| FR-01 | The system shall allow a caregiver to register and log in with a name, an email, and a password. The implemented account does not have a separate username. The sign-up screen sends the name. `GET /auth/me` returns it for the profile menu. |
 | FR-02 | The system shall allow a caregiver to add, edit, and manage multiple dependents, each with their own profile (age, height, weight, sex, allergies, and conditions).  |
 | FR-03 | The system shall automatically compute a dependent's daily sodium, sugar, and calorie targets whenever their profile is created or updated.  |
 | FR-04 | The system shall allow a caregiver to scan a food product's barcode and retrieve its nutrition information.  |
@@ -338,7 +338,7 @@ Development proceeded in layers. First, Docker Compose started PostgreSQL 16, an
 
 Food lookup was implemented as a cache-first barcode path. When `DEMO_MODE` is false, a miss calls Open Food Facts and stores the product; when `DEMO_MODE` is true, lookups read `backend/demo_products.json` and stay offline. Typed names resolve only `spaghetti` and `adobo` from `backend/dishes.json`. The committed scikit-learn Decision Tree (`max_depth=5`, `random_state=42`) is loaded with joblib at API startup. Hard safety rules still run first: an allergy match, or a condition nutrient above half of its daily target, is labeled danger before the tree is consulted.
 
-The mobile client was organized under `mobile/src/` with separate API types, screens, and navigation. After login, the caregiver selects a dependent and uses tabs for Scan, History, Alerts, Summary, and Intake. The scanner requests camera permission, applies a cooldown against duplicate rapid scans, and also accepts a typed barcode or dish name. Loading, empty, and error states use a shared status component with retry. Backend behavior is covered by pytest against PostgreSQL; the mobile project is checked with `npx tsc --noEmit`.
+The mobile client was organized under `mobile/src/` with separate API types, screens, and navigation. After login, the caregiver selects a dependent and uses a floating pill for Home, Overview, Scan, Intake, and Alerts. Overview opens History. A profile icon shows the caregiver name and Log out. The scanner requests camera permission, applies a cooldown against duplicate rapid scans, and also accepts a typed barcode or dish name. Loading, empty, and error states use a shared status component with retry. Backend behavior is covered by pytest against PostgreSQL; the mobile project is checked with `npx tsc --noEmit`.
 
 **Updated:** the course development period is three weeks.
 

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { login as loginRequest } from "../api";
+import { getCurrentUser, login as loginRequest } from "../api";
 import { setAccessToken, setUnauthorizedHandler } from "./accessToken";
 import { clearStoredToken, readStoredToken, writeStoredToken } from "./tokenStorage";
 
@@ -8,6 +8,7 @@ type SessionStatus = "loading" | "anonymous" | "authenticated";
 
 type SessionValue = {
   status: SessionStatus;
+  caregiverName: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -16,9 +17,20 @@ const SessionContext = createContext<SessionValue | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<SessionStatus>("loading");
+  const [caregiverName, setCaregiverName] = useState<string | null>(null);
+
+  const loadProfile = useCallback(async () => {
+    try {
+      const user = await getCurrentUser();
+      setCaregiverName(user.name);
+    } catch {
+      setCaregiverName(null);
+    }
+  }, []);
 
   const logout = useCallback(async () => {
     setAccessToken(null);
+    setCaregiverName(null);
     setStatus("anonymous");
     try {
       await clearStoredToken();
@@ -47,6 +59,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (token) {
           setAccessToken(token);
           setStatus("authenticated");
+          void loadProfile();
           return;
         }
         setAccessToken(null);
@@ -62,18 +75,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadProfile]);
 
   const login = useCallback(async (email: string, password: string) => {
     const result = await loginRequest({ email, password });
     await writeStoredToken(result.access_token);
     setAccessToken(result.access_token);
     setStatus("authenticated");
-  }, []);
+    await loadProfile();
+  }, [loadProfile]);
 
   const value = useMemo(
-    () => ({ status, login, logout }),
-    [status, login, logout],
+    () => ({ status, caregiverName, login, logout }),
+    [status, caregiverName, login, logout],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

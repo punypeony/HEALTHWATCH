@@ -13,6 +13,7 @@ import { errorMessage } from "../utils/errors";
 type Props = NativeStackScreenProps<AuthStackParamList, "Register">;
 
 export function RegisterScreen({ navigation }: Props) {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -20,7 +21,12 @@ export function RegisterScreen({ navigation }: Props) {
   const [formError, setFormError] = useState<string | null>(null);
 
   async function onSubmit() {
+    const trimmedName = name.trim();
     const trimmedEmail = email.trim();
+    if (!trimmedName || trimmedName.length > 200) {
+      setFormError("Enter your name.");
+      return;
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       setFormError("Enter a valid email address.");
       return;
@@ -37,7 +43,7 @@ export function RegisterScreen({ navigation }: Props) {
     setSubmitting(true);
     setFormError(null);
     try {
-      await register({ email: trimmedEmail, password });
+      await register({ name: trimmedName, email: trimmedEmail, password });
       navigation.reset({
         index: 0,
         routes: [{ name: "Login", params: { registeredEmail: trimmedEmail } }],
@@ -51,6 +57,12 @@ export function RegisterScreen({ navigation }: Props) {
 
   return (
     <AuthLayout title="Welcome aboard, let’s get started!" compact>
+        <Field tone="light" hideLabel
+          label="Name" placeholder="Enter your name"
+          value={name}
+          onChangeText={setName}
+          autoCapitalize="words"
+        />
         <Field tone="light" hideLabel
           label="Email" placeholder="Enter your email"
           value={email}
