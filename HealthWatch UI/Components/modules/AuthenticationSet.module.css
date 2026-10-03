@@ -1,0 +1,5 @@
+.auth-panel { width: min(calc(100% - 2rem), 34rem); margin-inline: auto; padding: 2rem; border-radius: 1.5rem; background: #135246; color: #fff; }
+.auth-panel h1 { margin: 0 0 1.5rem; text-align: center; }
+.auth-form { display: grid; gap: 1rem; }
+.auth-link { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
+.auth-switch { margin: 1.25rem 0 0; text-align: center; }

@@ -1,0 +1,20 @@
+.app-frame { min-height: 100vh; }
+.app-header, .main-navigation, .alert-actions, .result-actions { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.main-navigation { position: sticky; inset-block-end: 0; padding: .75rem; background: #fff; }
+.main-navigation button, .app-header button, .alert-actions button, .history-card button, .result-actions button, .scanner button { min-height: 2.75rem; padding: .6rem 1rem; border: 0; border-radius: 999px; background: #009e90; color: #fff; font-weight: 700; cursor: pointer; }
+.main-navigation button[aria-current="page"] { background: #135246; }
+.alert-list, .history-list { display: grid; gap: 1rem; padding: 0; list-style: none; }
+.alert-card, .history-card { padding: 1rem; border: 1px solid #dce5e2; border-radius: 1rem; }
+.history-card { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.intensity, .status { display: flex; align-items: center; gap: .75rem; padding: .75rem 1rem; border-radius: .75rem; }
+.intensity-low, .status-safe { background: #e6f4ea; color: #135246; }
+.intensity-moderate, .status-caution { background: #fff4d6; color: #674900; }
+.intensity-high, .status-alert { background: #fde8e7; color: #8e211b; }
+.healthwatch-logo { display: inline-flex; align-items: center; gap: .5rem; color: #135246; }
+.wallpaper { min-height: 100vh; background-position: center; background-size: cover; }
+.scan-results { display: grid; gap: .75rem; }
+.result-actions { justify-content: flex-start; flex-wrap: wrap; }
+.main-navigation button, .app-header button, .result-actions button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; }
+.main-navigation button { flex-direction: column; }
+.main-navigation button img, .app-header button img, .result-actions button img { padding: .2rem; background: #fff; border-radius: .25rem; box-sizing: content-box; }
+.history-card > div { flex: 1; min-width: 0; }

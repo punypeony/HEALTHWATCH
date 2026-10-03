@@ -1,0 +1,2 @@
+.dependent-form, .intake-form { display: grid; gap: 1rem; width: min(calc(100% - 2rem), 38rem); margin-inline: auto; color: #24312e; }
+.dependent-form h1, .intake-form h1 { margin: 0 0 .5rem; color: #135246; }
