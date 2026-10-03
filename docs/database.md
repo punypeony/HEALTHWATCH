@@ -63,8 +63,10 @@ These displayed values are results of `compute_daily_targets`, not seed inputs.
   They stay inside `raw_response` when the source provided them.
 - An alert has a composite foreign key to its meal log and dependent: a valid
   meal-log ID cannot be attached to the wrong dependent.
-- Deleting a caregiver/dependent cascades to its owned records. Cached products
-  remain; deleting a product referenced by a meal log is restricted.
+- Deleting a caregiver/dependent cascades to its owned records. **Updated:** deleting one
+  meal log removes that meal, and the alert foreign key removes its alert.
+  Clearing one dependent's meals does the same for every meal of that dependent.
+  Cached products remain; deleting a product referenced by a meal log is restricted.
 
 ## Target calculation assumptions
 

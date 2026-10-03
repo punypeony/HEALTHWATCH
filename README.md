@@ -1,12 +1,13 @@
 # Food Consumption Health Monitoring System
 
-Caregiver-facing Expo app and FastAPI backend for monitoring food consumption of dependent relatives.
+Caregiver-facing Expo app and FastAPI backend for monitoring food consumption of dependent relatives. **Updated:** this is a three-week Intro to Software Engineering course project.
 
 The backend now includes authentication and caregiver-owned dependent management.
 See [API usage and PowerShell login example](docs/api.md) for endpoint contracts,
 JWT setup, ownership rules, and errors. The [scan endpoint](docs/scan.md) classifies a barcode or the dish names
 `spaghetti` and `adobo`, then stores meal logs and warning/danger alerts
 atomically. A caregiver can mark grams eaten. Daily intake sums those meals.
+**Updated:** History can delete one scan or clear every scan for the open dependent.
 
 The [food lookup module](docs/food_lookup.md) supports Open Food Facts, PostgreSQL
 caching, and deterministic offline demo barcodes used by scanning.

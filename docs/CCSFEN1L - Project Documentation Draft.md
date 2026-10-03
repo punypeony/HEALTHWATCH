@@ -42,7 +42,7 @@ The proposed system, **Health Watch**, is a mobile application built to support 
 
 This kind of application is supported by existing research on digital health tools. A systematic review and meta-analysis of dietary mobile applications used by adults with chronic diseases found that these applications function as effective self-monitoring tools and produce measurable improvements in nutrition-related outcomes, particularly weight loss (Fakih El Khoury et al., 2019). Similarly, an observational study on mobile health applications for chronic disease management reported that a large share of daily and weekly users experienced improvements in blood glucose levels, weight, and adherence to dietary recommendations (Spinean et al., 2025). These findings support the idea that a mobile, scan-based diet monitoring tool can produce real, practical benefits for users managing chronic conditions.
 
-The intended users of the system are caregivers: family members or guardians responsible for the diet of a dependent relative, especially one with a condition such as diabetes or hypertension, or one who is very young or elderly. Upon completion, the system will let a caregiver register dependents, automatically calculate each dependent's personal nutrition targets, scan barcodes to check food safety in real time, and review a history of scanned meals, alerts, and weekly summaries.
+The intended users of the system are caregivers: family members or guardians responsible for the diet of a dependent relative, especially one with a condition such as diabetes or hypertension, or one who is very young or elderly. **Updated:** the course development period is three weeks. The system lets a caregiver register dependents, automatically calculate each dependent's personal nutrition targets, scan barcodes to check food safety in real time, and review a history of scanned meals, alerts, and weekly summaries.
 
 # **2\. PROBLEM STATEMENT**
 
@@ -85,7 +85,8 @@ To design and develop a mobile application that helps caregivers manage multiple
 * The system will maintain a history of scanned meals, generate alerts for risky food items, and produce a weekly summary of eating patterns for each dependent.  
 * The system will include an offline demo mode using a small, fixed set of sample products, to support demonstrations without depending on live internet access.
 * The caregiver can type `spaghetti` or `adobo`. Those two names use a local FNRI table. They are not looked up on Open Food Facts.
-* The caregiver can mark a scan as eaten and enter grams. Daily intake sums only those meals. The weekly summary still counts every scan.
+* **Updated:** the caregiver can mark a scan as eaten and enter grams. When the product has a gram serving, the eaten step asks for a serving count and stores servings times that weight. A warning or danger result asks before that amount. Confirm asks again when today's intake is already over a target or this amount would put it over. Daily intake sums only those meals. The weekly summary still counts every scan.
+* **Updated:** the caregiver can delete one scan or clear every scan for the open dependent. The alert for a deleted meal is removed with it. Cached products stay.
 * Optional conditions are Diabetic, Hypertension, High cholesterol, and Kidney disease. A dependent can be saved with none of them checked.
 
 **4.2 Limitations**
@@ -125,6 +126,7 @@ To design and develop a mobile application that helps caregivers manage multiple
 | FR-09 | The system shall generate a weekly summary of a dependent's eating pattern based on their scan history.  |
 | FR-10 | The system shall accept the dish names spaghetti and adobo and run the same classification, meal-log, and alert steps used for a barcode. |
 | FR-11 | The system shall let the caregiver record grams eaten, and shall report daily intake from those meals only. |
+| FR-12 | **Updated:** the system shall let the caregiver delete one meal log, or clear every meal log, for one owned dependent. |
 
 **5.3 Non-Functional Requirements**
 
@@ -132,7 +134,7 @@ To design and develop a mobile application that helps caregivers manage multiple
 | ----- | ----- |
 | Performance | The course target is a food-safety result within 3 seconds after a barcode is scanned, under normal network conditions. The implemented Open Food Facts client uses a 10-second timeout. That 3-second line has not been measured for live lookups. |
 | Security | The system shall only allow a caregiver to view or edit the profiles and data of their own registered dependents. |
-| Usability | The system shall display safe, warning, and danger as readable text. History rows use a distinct fill for each label. |
+| Usability | **Updated:** the system shall display safe, warning, and danger as readable text. Each history row shows a risk badge on a plain card. |
 | Reliability | The system shall continue to function in offline demo mode using saved sample products, and the two typed dishes, if there is no internet connection. |
 
 **5.4 Business Rules**  
@@ -177,7 +179,10 @@ flowchart TD
   caregiver --> weeklySummary[View Weekly Summary]
   caregiver --> confirmEaten[Confirm grams eaten]
   caregiver --> dailyIntake[View Daily Intake]
+  caregiver --> deleteHistory[Delete one scan or clear history]
 ```
+
+**Updated:** the use case **Delete one scan or clear history** was added.
 
 **6.2 Activity Diagram**
 
@@ -308,6 +313,8 @@ erDiagram
 
 *Briefly describe how the system was developed.*
 
+**Updated:** the course development period is three weeks.
+
 **10.1 Development Tools and Technologies**
 
 | Tool/Technology | Purpose |
@@ -323,7 +330,7 @@ erDiagram
 1. Register, login, and JWT ownership of dependents.
 2. Computed calorie, sodium, and sugar targets, plus condition checks for hypertension, diabetic, high cholesterol, and kidney disease.
 3. Barcode scan through Open Food Facts or offline demo products, and typed lookup for spaghetti and adobo.
-4. Meal history, alerts, weekly summary, eaten grams, and daily intake. 
+4. **Updated:** meal history, delete one scan or clear that dependent's scans, alerts, weekly summary, eaten grams or servings, and daily intake. 
 
 # **11\. TRANSACTION PROCESSING**
 
@@ -355,13 +362,13 @@ Not inserted in this file.
 **Transaction 2: Confirm eaten amount**
 
 **Input:**  
-Meal log id and grams greater than zero.
+**Updated:** meal log id and grams greater than zero. When the scan included a gram serving, the phone collects a serving count and sends servings times that weight.
 
 **Validation:**  
-The meal must belong to a dependent owned by the JWT caregiver.
+**Updated:** the meal must belong to a dependent owned by the JWT caregiver. On the phone, a warning or danger result asks Eat anyway or Cancel before the amount field. Confirm asks again when today's intake is already over a target or this amount would put it over. Cancel does not send the update.
 
 **Processing:**  
-The grams are stored and the meal is marked eaten.
+**Updated:** the grams are stored and the meal is marked eaten. The risk label is not recomputed from the amount.
 
 **Database Update:**  
 `meal_logs.eaten` becomes true and `grams_eaten` is set. Daily intake on the next read includes that meal. The weekly summary already counted the scan.

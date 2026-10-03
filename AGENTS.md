@@ -4,7 +4,7 @@
 
 A caregiver-facing mobile application for monitoring food consumption of dependent relatives.
 
-This is an **Intro to Software Engineering course project** with a **1-week development deadline**.
+This is an **Intro to Software Engineering course project** with a **3-week development deadline**. **Updated:** the development period is three weeks, not one week.
 
 The system allows a caregiver to manage dependent relatives. Each dependent has a dietary profile with computed daily nutrition targets. The caregiver can scan a food barcode, retrieve its nutrition information, and have a locally trained Decision Tree classify the food as `safe`, `warning`, or `danger` based on the dependent's targets, allergies, and conditions.
 
@@ -88,7 +88,7 @@ Prefer simple implementations that every team member can explain.
 
 # 3. PROJECT SCOPE
 
-This is a one-week Software Engineering course project.
+This is a **three-week** Software Engineering course project. **Updated:** the development period is three weeks, not one week.
 
 Do not add features that are not required.*
 

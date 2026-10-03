@@ -4,7 +4,7 @@ This describes the code in the repository. There is no chatbot, recommendation e
 
 ## Runtime pieces
 
-The phone app is Expo, React Native, and TypeScript. Navigation is React Navigation: a stack for login, register, and the dependent list, then tabs for one dependent (Scan, History, Alerts, Summary, Intake). The dependent footer is a floating pill that also returns Home to the list.
+The phone app is Expo, React Native, and TypeScript. **Updated:** navigation is React Navigation with one stack for login and register, then a stack for the dependent list, add and edit, and one dependent. That dependent screen uses the default bottom tab bar: Scan, History, Alerts, Summary, and Intake. The stack back button returns to the dependents list. Log out is a text control on the stack header.
 
 The phone calls FastAPI over HTTP. `mobile/src/api.ts` attaches `Authorization: Bearer <token>` from device storage (`expo-secure-store` on iOS and Android, `localStorage` on web). The API base URL is `EXPO_PUBLIC_API_URL`, or `http://10.0.2.2:8000` on Android emulators, otherwise `http://127.0.0.1:8000`.
 
@@ -46,6 +46,10 @@ Creating or updating a dependent writes one `dietary_profiles` row. `compute_dai
 `GET /dependents/{id}/summary/weekly` counts that dependent's meal logs from the last 7 UTC days, including scans the caregiver has not marked as eaten. It finds the most common stored reason text and writes one templated sentence. The row is upserted in `summaries` for that dependent and window start. The text is ordinary Python, not a language model.
 
 `GET /dependents/{id}/daily-intake` is separate. It sums meals with `eaten` true and `grams_eaten` greater than zero for one `Asia/Manila` date, scaled from per-100 g values. `PATCH /meals/{id}` is what marks a meal eaten.
+
+**Updated:** History lists the same meal logs. Calories, sodium, and sugar stay per 100 g in the response. When `grams_eaten` is greater than zero, the History screen shows each of those three nutrients scaled by `grams_eaten / 100`, rounded half up to two decimals. When it is null, History shows the per-100 g values. `DELETE /meals/{id}` removes one owned meal. `DELETE /dependents/{id}/meals` removes every meal for that owned dependent. The alert foreign key removes the alerts for those meals. Cached products stay.
+
+**Updated:** On the scan result, Eaten opens the amount field immediately when the label is safe. A warning or danger label asks Eat anyway or Cancel first. Cancel does not mark the meal eaten. When the scan included `serving_grams`, the amount is a serving count and the app stores servings times that weight. Otherwise the caregiver enters grams. Confirm then compares that amount with today's intake. If a checked nutrient is already over its target, or this amount would put it over, a Daily limit popup offers Eat anyway or Cancel. Eat anyway sends the same PATCH. The risk label stays the 100 g classification.
 
 ## Decision tree
 

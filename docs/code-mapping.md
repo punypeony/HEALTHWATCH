@@ -3,7 +3,7 @@
 | Path | Role |
 | --- | --- |
 | `backend/app/main.py` | FastAPI app, error handlers, model load on startup |
-| `backend/app/routes.py` | Auth, dependents, meals, alerts, weekly summary, scan |
+| `backend/app/routes.py` | **Updated:** auth, dependents, meals, meal delete, alerts, daily intake, weekly summary, scan |
 | `backend/app/auth.py` | Registration, login, JWT |
 | `backend/app/passwords.py` | Password hashing |
 | `backend/app/dependents.py` | Owned dependent and alert operations, target recompute |
@@ -31,10 +31,10 @@
 | `mobile/src/screens/RegisterScreen.tsx` | Registration |
 | `mobile/src/screens/DependentsScreen.tsx` | Dependent list |
 | `mobile/src/screens/DependentFormScreen.tsx` | Add and edit dependent |
-| `mobile/src/screens/ScannerScreen.tsx` | Camera scan, manual barcode, dish name, result, eaten grams |
-| `mobile/src/screens/HistoryScreen.tsx` | Meal history |
+| `mobile/src/screens/ScannerScreen.tsx` | **Updated:** camera scan, manual barcode, dish name, result, warning or danger prompt, servings or grams, daily-limit prompt |
+| `mobile/src/screens/HistoryScreen.tsx` | **Updated:** meal history, delete one scan, clear this dependent's scans |
 | `mobile/src/screens/AlertsScreen.tsx` | Alerts and acknowledgement |
 | `mobile/src/screens/SummaryScreen.tsx` | Weekly counts and sentence |
 | `mobile/src/screens/IntakeScreen.tsx` | Daily intake |
-| `mobile/src/navigation/DependentTabs.tsx` | Scan, History, Alerts, Summary, Intake, and Home |
+| `mobile/src/navigation/DependentTabs.tsx` | **Updated:** Scan, History, Alerts, Summary, and Intake on the default tab bar |
 | `mobile/src/theme/` | Colors, type, and spacing used by the screens |

@@ -1,6 +1,6 @@
 # Requirements
 
-These rows name behavior that the current code implements. Diagrams are in [DIAGRAMS.md](DIAGRAMS.md). The running design is in [ARCHITECTURE.md](ARCHITECTURE.md).
+These rows name behavior that the current code implements. Diagrams are in [diagrams.md](diagrams.md). The running design is in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Functional
 
@@ -24,15 +24,16 @@ These rows name behavior that the current code implements. Diagrams are in [DIAG
 | Condition conflict | Forces `danger` above half the matching target: hypertension and sodium, diabetic and sugar, diabetic and carbohydrate, high cholesterol and saturated fat, kidney disease at age 12 or older and protein. A missing value fails the scan only when that condition is checked. Fiber is not a rule. | `backend/app/scan.py`, `backend/app/ml/predict.py` |
 | Remaining scans use the local decision tree | `predict_risk` calls the joblib tree only when the hard rules do not apply. | `backend/app/ml/predict.py`, `backend/ml/risk_model.pkl` |
 | Meal log is stored | Every successful scan inserts `meal_logs` with `safe`, `warning`, or `danger`, JSON reasons, `eaten` false, and `grams_eaten` null. | `backend/app/scan.py` |
-| Confirm an amount eaten | `PATCH /meals/{id}` sets `eaten` true and stores grams greater than zero. | `backend/app/routes.py`, `mobile/src/screens/ScannerScreen.tsx` |
+| Confirm an amount eaten | **Updated:** `PATCH /meals/{id}` sets `eaten` true and stores grams greater than zero. When the scan included `serving_grams`, the phone asks for a serving count and sends servings times that weight. Otherwise it asks for grams. A warning or danger result asks Eat anyway or Cancel before the amount field. Confirm asks again when today's intake is already over a target or this amount would put it over. | `backend/app/routes.py`, `mobile/src/screens/ScannerScreen.tsx` |
 | Daily intake | Sums eaten meals for one `Asia/Manila` date, scaled from per-100 g values. Calories, sodium, and sugar always appear. Carbohydrate, saturated fat, and protein appear only for the matching condition. | `backend/app/intake.py`, `mobile/src/screens/IntakeScreen.tsx` |
 | Alert for warning or danger | `create_alert_if_needed` inserts an `active` alert. Safe scans leave `alert_id` null. | `backend/app/scan.py` |
 | Scan response shape | Label, product, percentages, reasons, `meal_log_id`, and `alert_id`. | `backend/app/scan.py`, `backend/app/schemas.py` |
-| View history | `GET /dependents/{id}/meals`, newest first, including the stored Open Food Facts photo when one exists. | `backend/app/routes.py`, `mobile/src/screens/HistoryScreen.tsx` |
+| View history | **Updated:** `GET /dependents/{id}/meals`, newest first, including the stored Open Food Facts photo when one exists. Calories, sodium, and sugar are scaled to `grams_eaten` on this screen when that amount is greater than zero. Otherwise they stay per 100 g. | `backend/app/routes.py`, `mobile/src/screens/HistoryScreen.tsx` |
+| Delete history | **Updated:** `DELETE /meals/{id}` removes one owned meal. `DELETE /dependents/{id}/meals` removes every meal for that dependent. Alerts for those meals are removed by the meal foreign key. Cached products stay. History asks before either delete. | `backend/app/routes.py`, `mobile/src/screens/HistoryScreen.tsx` |
 | View alerts | `GET /dependents/{id}/alerts` includes product name and risk label. | `backend/app/routes.py`, `mobile/src/screens/AlertsScreen.tsx` |
 | Acknowledge an alert | `PATCH /alerts/{id}` accepts only `acknowledged`. Repeating that status is allowed. | `backend/app/routes.py`, `backend/app/schemas.py` |
 | Weekly summary from stored meals | Last 7 days: total, safe, warning, danger, most common reason, and a templated sentence. One `summaries` row per dependent and window start. | `backend/app/summary.py`, `mobile/src/screens/SummaryScreen.tsx` |
-| Dependent tabs | After a dependent is selected: Scan, History, Alerts, Summary, and Intake. Home returns to the dependents list. | `mobile/src/navigation/DependentTabs.tsx` |
+| Dependent tabs | **Updated:** after a dependent is selected, the default tab bar shows Scan, History, Alerts, Summary, and Intake. The stack back button returns to the dependents list. Log out is on the stack header. | `mobile/src/navigation/DependentTabs.tsx`, `mobile/src/navigation/AppNavigator.tsx` |
 
 ## Non-functional
 
