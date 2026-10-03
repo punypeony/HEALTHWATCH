@@ -104,11 +104,16 @@ To design and develop a mobile application that helps caregivers manage multiple
 
 **5.1 Target Users and Stakeholders**
 
-| User/Stakeholder | Description |
-| ----- | ----- |
-| Caregiver  | The main user of the app. Adds and manages dependents, scans food items, and views alerts and summaries.  |
-| Dependent  | The person being cared for (e.g., an elderly relative or a child with a health condition) does not use the app directly; their health data is managed by the caregiver. |
-| \[Stakeholder\] | \[Description\] |
+The system is caregiver-facing. The dependent is a data subject, not an account holder. Other parties listed below are affected by the project or by its outputs, but they do not operate the application.
+
+| User/Stakeholder | Type | Description |
+| ----- | ----- | ----- |
+| Caregiver | Primary user | Family member or guardian who registers, logs in, and uses the application. The caregiver adds and edits dependents, scans barcodes or types an allowed dish name, confirms grams eaten, and reviews history, alerts, daily intake, and weekly summaries. Authorization is based on the caregiver's JWT, not on an identifier sent by the client. |
+| Dependent | Indirect user / data subject | Relative whose age, height, weight, sex, allergies, and conditions are stored so that daily targets and scan results can be computed. The dependent does not register, log in, or receive a separate account. |
+| Family household | Stakeholder | Other relatives who may rely on the caregiver's food decisions. They do not have in-app roles. The application stores only the caregiver account and the dependents that caregiver registers. |
+| Course instructor and evaluators | Stakeholder | Academic audience for the one-week software engineering project. They require a working demo (including offline `DEMO_MODE`), documented design, and test evidence. They do not use the product as caregivers. |
+| Development team | Stakeholder | The student group that designed, implemented, tested, and documented Health Watch. They maintain the Expo client, FastAPI service, PostgreSQL schema, and the committed decision-tree artifacts. |
+| Health professionals (doctors, dietitians) | Indirect stakeholder | The intended clinical audience for genuine medical advice. The application is a support tool, not a medical device, and does not replace professional judgment. |
 
 **5.2 Functional Requirements**  
 *List the major functions of the system.*
@@ -147,15 +152,31 @@ To design and develop a mobile application that helps caregivers manage multiple
 5. A new scan is not eaten until the caregiver confirms a gram amount. Daily intake uses those confirmed meals. The weekly summary still counts every scan.
 
 **5.5 Requirements Gathering**  
-*Indicate the method/s used to gather requirements.*  
-*☐ Interview*  
-*☐ Observation*  
-*☐ Questionnaire*  
-*☐ Document Analysis*  
-*☐ Other: \_\_\_\_\_\_\_\_\_\_\_*
+Indicate the method/s used to gather requirements.  
+☐ Interview  
+☐ Observation  
+☐ Questionnaire  
+☑ Document Analysis  
+☐ Other: ___________
 
-**Brief Description:**  
-\[Explain how the requirements were gathered.\]
+**Method justification.** Document analysis was selected as the primary requirements-gathering method. The project is a one-week course system with a written specification, published nutrition guidance, and a public food API. Interview, observation, and questionnaire methods were not used: the team did not have access to a recruited caregiver sample, and medical claims were not to be invented from informal conversation. Analysis therefore meant reading existing documents, extracting operational rules, input and output schemas, performance expectations, and constraints, and recording only those items that the later implementation could satisfy.
+
+**Primary objective.** Identify who uses the system, what a scan must do, which data may be stored or rejected, and which rules a caregiver must not be allowed to override, without live participant sessions.
+
+**Key artifacts analyzed.**
+
+| Artifact | What was extracted |
+| ----- | ----- |
+| Course project specification | Caregiver as the only actor; JWT ownership; PostgreSQL through SQLAlchemy; local Decision Tree; standard error JSON; scan steps (validate, fetch, percentages, allergy, conditions, predict, meal log, alert); demo mode; computed daily targets that the client cannot post |
+| Academic and guideline literature already cited in Sections 1–2 | Caregiving context (Cruz et al., 2019; Lawson et al., 2021); dietary mHealth support (Fakih El Khoury et al., 2019; Spinean et al., 2025); WHO sodium and free-sugar baselines (World Health Organization, 2012, 2015) |
+| Named nutrition references required by the specification | Mifflin-St Jeor calorie equation and sedentary multiplier 1.2; hypertension sodium reduction of 30%; diabetic sugar reduction of 50%; WHO saturated-fat share (10% of energy / 9); AMDR carbohydrate upper share (65% of energy / 4); KDIGO 2024 protein ceiling of 1.3 g per kg per day for adults, with no protein restriction rule for children |
+| Open Food Facts API documentation | Barcode product URL, per-100 g nutriments, structured allergen tags; missing values must not be stored as zero |
+| FNRI food composition library (two committed rows only) | `spaghetti` and `adobo` per 100 g; adobo saturated fat is missing |
+| Running codebase, API contract, and technical logs | Implemented routes, schemas, demo barcodes, training dataset and evaluation report, defect log |
+
+**How the analysis was applied.** Functional requirements FR-01 to FR-11 were taken from the specification and confirmed against the running routes (register and login, dependents, scan, meals, alerts, weekly summary, eaten grams, daily intake). Non-functional requirements were taken from the same documents: ownership and hashed passwords for security; `DEMO_MODE` and local dishes for reliability; readable risk labels for usability; a course timing expectation of three seconds, recorded honestly as unmeasured for live Open Food Facts calls because the implemented client timeout is ten seconds. Business rules follow directly from those documents: targets are server-computed, allergy match forces danger, every scan is logged, and daily intake counts only confirmed grams.
+
+**Outcome.** The analysis produced the stakeholder table in Section 5.1, the functional and non-functional tables in Sections 5.2–5.3, and the business rules in Section 5.4. It also fixed structural constraints used in implementation: nutrition is per 100 g; required nutrients that are missing fail the scan; carbohydrate, saturated fat, and protein are read only when the matching condition is checked; the Decision Tree is not retrained when those hard rules are added; typed names other than `spaghetti` and `adobo` return not found. The method did not produce interview-based personas or observed shopping workflows, and those were not claimed.
 
 # **6\. SYSTEM MODELING AND DESIGN**
 
@@ -311,7 +332,13 @@ erDiagram
 
 # **10\. SYSTEM IMPLEMENTATION**
 
-*Briefly describe how the system was developed.*
+The system was built as two coordinated parts: an Expo React Native client in TypeScript and a Python FastAPI backend with PostgreSQL. Work followed the required scan transaction instead of a single handler. Route functions in the API orchestrate validation, food lookup, percentage calculation, allergy matching, condition checks, local decision-tree prediction, meal-log creation, and alert creation. The phone application never invents a risk label; it displays the JSON returned by the backend.
+
+Development proceeded in layers. First, Docker Compose started PostgreSQL 16, and SQLAlchemy models created the tables for users, dependents, dietary profiles, scanned products, meal logs, alerts, and summaries. Authentication was added next: registration stores a PBKDF2-SHA256 password hash, and login issues a JWT whose `sub` claim is the caregiver id. Dependent create and update hooks call `compute_daily_targets` so sodium, sugar, and calorie limits are stored with the profile and cannot be posted by the client.
+
+Food lookup was implemented as a cache-first barcode path. When `DEMO_MODE` is false, a miss calls Open Food Facts and stores the product; when `DEMO_MODE` is true, lookups read `backend/demo_products.json` and stay offline. Typed names resolve only `spaghetti` and `adobo` from `backend/dishes.json`. The committed scikit-learn Decision Tree (`max_depth=5`, `random_state=42`) is loaded with joblib at API startup. Hard safety rules still run first: an allergy match, or a condition nutrient above half of its daily target, is labeled danger before the tree is consulted.
+
+The mobile client was organized under `mobile/src/` with separate API types, screens, and navigation. After login, the caregiver selects a dependent and uses tabs for Scan, History, Alerts, Summary, and Intake. The scanner requests camera permission, applies a cooldown against duplicate rapid scans, and also accepts a typed barcode or dish name. Loading, empty, and error states use a shared status component with retry. Backend behavior is covered by pytest against PostgreSQL; the mobile project is checked with `npx tsc --noEmit`.
 
 **Updated:** the course development period is three weeks.
 
@@ -324,6 +351,8 @@ erDiagram
 | scikit-learn Decision Tree, joblib | Local risk classifier |
 | Expo, React Native, TypeScript | Caregiver phone app |
 | pytest | Backend tests |
+| Open Food Facts API | Live barcode nutrition and allergen tags |
+| Docker Compose | Local PostgreSQL 16 for application and tests |
 
 **10.2 Major System Features**
 
@@ -404,23 +433,63 @@ Backend business logic is tested with pytest against PostgreSQL. The mobile proj
 
 # **13\. CHALLENGES AND SOLUTIONS**
 
- *.*
+Development took place under a one-week deadline, a fixed technology list, and incomplete external food data. The table records problems that actually appeared during implementation and testing, and the solutions that were applied.
 
 | Challenge | Solution |
 | ----- | ----- |
-| \[Challenge\] | \[Solution\] |
-| \[Challenge\] | \[Solution\] |
-| \[Challenge\] | \[Solution\] |
+| Windows PostgreSQL 18 was already bound to port 5432, so Docker Postgres rejected the expected password and the API could not start (defect D1). | The local PostgreSQL 18 service was stopped. Docker Compose PostgreSQL 16 was left on 5432 for both the application database and the test database. |
+| A physical phone could not reach FastAPI when `EXPO_PUBLIC_API_URL` still pointed at an old address, or when Windows Firewall did not allow port 8000 on the current Wi-Fi profile (defect D2). | The mobile environment must use this computer’s current LAN IPv4 address. Expo is restarted with cache cleared. Port 8000 is allowed on the private network. This remains an environment setup step, not a code defect that is fully closed. |
+| `DEMO_MODE=true` correctly blocks live Open Food Facts, so barcodes that exist online but are absent from `demo_products.json` return product not found (defect D3). Testers initially treated that as a lookup bug. | Demo mode is documented as an offline course path. Local `.env` is set to `DEMO_MODE=false` for live lookup. The three demo hypertension barcodes stay in the demo file so the scripted demo still runs without the internet. |
+| Incomplete Open Food Facts records. Many products omit calories, sodium, sugar, or a condition-specific nutrient. Treating a blank as zero would understate risk. | Required per-100 g values that are missing, non-numeric, or negative return `PRODUCT_DATA_INVALID`. Saturated fat, carbohydrate, and protein are requested only when the matching condition is checked. Fiber is never used as a danger rule. |
+| Weekly summary SQL counted alert reasons with a cartesian product and the endpoint returned 503 (defect D4). | Reasons are counted with a single `jsonb_array_elements_text` statement. The weekly text is a template from stored meal statistics, not a language model. |
+| Later requirements added high cholesterol, diabetic carbohydrate, and kidney-disease protein, but the committed Decision Tree must not be replaced or retrained. | Those nutrients are hard rules before the tree (danger above half of the matching daily target). Allergy match still wins. The pickle, feature order, and training scripts stay as originally committed. |
+| Synthetic training evaluation files recorded Python 3.14.7 while the development environment uses 3.11, which broke a strict file comparison (defect D5). | Reproducibility still requires matching accuracy, confusion matrix, library versions, and tree artifacts. The interpreter version string is no longer treated as part of that match. |
+| Duplicate camera scans and missing camera permission would produce repeated meal logs or a blank scanner. | The scanner requests permission, applies a cooldown, shows loading, and offers manual barcode entry plus the two typed dish names. Results come only from the backend. |
+| Daily intake carbohydrate limit is rounded half-up to two decimal places (305.66) while one test compared the unrounded formula (305.6625) (defect D6). | The displayed/API rounding was left in place. The test assertion still needs a wider tolerance or a comparison against the already rounded value. |
 
 # **14\. CONCLUSION**
 
-*Provide a brief summary of the completed project.*  
-*Discuss:*
+**14.1 Summary of the completed project**
 
-* *Whether the objectives were achieved*   
-* *Major accomplishments*   
-* *Overall system performance*   
-* *Possible improvements* 
+Health Watch is a caregiver-facing mobile application, backed by FastAPI and PostgreSQL, for monitoring food consumption of dependent relatives. A caregiver registers with an email and hashed password, logs in to receive a JWT, and manages one or more dependents. Each dependent has a dietary profile whose daily calorie, sodium, and sugar targets are computed from age, height, weight, sex, and recorded conditions. The caregiver then scans an 8–14 digit barcode, or types `spaghetti` or `adobo`, for that dependent. The backend looks up per-100 g nutrition, computes percentages of the stored targets, checks allergies and condition conflicts, applies a locally loaded Decision Tree when no hard rule forces danger, writes a meal log, and creates an alert when the label is warning or danger. The phone shows the returned label, reasons, and product values. The caregiver can later confirm grams eaten; daily intake sums only those meals, while the weekly summary still counts every scan. Offline course demonstration uses `DEMO_MODE` and three fixed barcodes. The system is a support tool, not a medical device.
+
+**14.2 Whether the objectives were achieved**
+
+The general objective in Section 3.1 was achieved within the stated scope: a caregiver can manage multiple dependents and obtain a per-person `safe`, `warning`, or `danger` result at scan time from that dependent’s profile.
+
+| Specific objective | Result |
+| ----- | ----- |
+| SO-1. Design individual dependent profiles (age, weight, height, allergies, conditions including diabetes and hypertension) | Achieved. Create and edit forms store those fields. Optional checkboxes also cover high cholesterol and kidney disease. A dependent may be saved with no condition checked. Targets are never entered by the caregiver. |
+| SO-2. Develop barcode scanning that identifies a product and retrieves nutrition | Achieved. Camera scan with permission and cooldown, plus manual barcode entry, call `POST /dependents/{id}/scan`. Live lookup uses Open Food Facts; demo mode uses `demo_products.json`. Typed dishes are a separate local table, not a substitute for scanning. |
+| SO-3. Automatically compute daily sodium, sugar, and calorie targets from established guidance, reduced when conditions require it | Achieved. Mifflin-St Jeor plus a named activity multiplier, child and elderly factors, 2000 mg sodium baseline with a 30% hypertension reduction, and free sugar as 10% of calories / 4 with a 50% diabetic reduction. Additional hard limits for carbohydrate, saturated fat, and protein apply only when those conditions are recorded. |
+| SO-4. Integrate Open Food Facts, PostgreSQL, and a locally trained Decision Tree | Achieved. Successful live barcodes are cached in `scanned_products`. The tree is a committed `DecisionTreeClassifier` loaded with joblib inside FastAPI. Allergy match and condition conflict above half of the matching target force danger before the tree. |
+| SO-5. Evaluate functionality and classification performance for safe, warning, and danger | Achieved as a course evaluation, not as clinical validation. Backend business logic is covered by pytest against PostgreSQL. The mobile project is typechecked with `npx tsc --noEmit`. Holdout accuracy on 1000 synthetic test rows is 92.90% (precision/recall: safe 0.94/0.98, warning 0.88/0.78, danger 0.93/0.90). Demo barcodes on Demo Hypertension produce the required safe, warning, and danger path. |
+
+Objectives that were never in Section 3 were not treated as incomplete work: there is no chatbot, OCR of plated meals, payment, or remote language-model inference.
+
+**14.3 Major accomplishments**
+
+1. An end-to-end caregiver flow that matches the required demonstration: register or login, select a dependent, scan a safe item, a warning item, and a danger item, then open alerts, history, and the weekly summary, including the offline demo barcodes `2000000000015`, `2000000000022`, and `2000000000039`.
+2. A visible scan transaction with separate functions rather than one undifferentiated route handler, and one database transaction for product reference, meal log (`eaten` false), and optional alert, with rollback on failure.
+3. Authorization from the JWT caregiver id only, so one account cannot read or change another caregiver’s dependents, meals, or alerts. Passwords are stored as PBKDF2-SHA256 hashes.
+4. Deterministic, human-readable reasons (for example allergy match, sodium or sugar high or exceeding the daily target, and condition-specific conflict sentences) instead of inspecting the tree at request time.
+5. Condition-specific nutrients handled without retraining the model: saturated fat for high cholesterol, carbohydrate for diabetic (in addition to sugar), protein for kidney disease at age 12 or older, with missing values rejected rather than stored as zero.
+6. Committed machine-learning artifacts (generator, 5000-row dataset, trainer, pickle, feature order, readable tree, evaluator) with test accuracy above the 90% course floor.
+7. Caregiver tools beyond the scan itself: meal history, alert acknowledgement, templated weekly summary from real counts, confirm-grams, and daily intake scaled from per-100 g values.
+
+**14.4 Overall system performance**
+
+Functional performance is sufficient for the course demonstration. `/health` confirms PostgreSQL connectivity. Scan, meal, alert, summary, and intake routes operate against the owned dependent. Demo mode and the two FNRI dishes work without Open Food Facts. Successful live products are reused from `scanned_products` so the same barcode is not fetched repeatedly.
+
+Classification performance on the synthetic holdout meets the numeric target: 92.90% accuracy. Warning recall (0.78) is the weakest class, which is expected from class counts (warning is the smallest label). That figure is not a clinical trial and must not be presented as medical accuracy.
+
+Reliability still depends on external data quality and local setup. Live barcode success requires Open Food Facts to return finite per-100 g calories, sodium, and sugar. Condition checkboxes add further required fields. The implemented HTTP timeout for Open Food Facts is ten seconds; the three-second course timing statement in Section 5.3 was not measured on live lookups. A phone on another network still needs a correct `EXPO_PUBLIC_API_URL` and firewall rule (defect D2). Defect D6 remains open: the daily-intake carbohydrate limit is rounded to 305.66 while an unrounded comparison expects 305.6625.
+
+**14.5 Possible improvements**
+
+If work continued after the one-week limit, the next engineering steps would be: measure live scan latency against the three-second target; close D6 by aligning the intake test with rounded API limits; close or document D2 as a deployment checklist for Expo on a physical device; expand the local dish table beyond two FNRI rows so typed names are less brittle; and add more complete demo products for high cholesterol and kidney disease without changing the hypertension demo barcodes.
+
+Product limitations that should stay explicit in any future version: barcodes missing nutrition will still fail rather than guess; adobo will still be invalid for a high-cholesterol dependent because saturated fat is missing; the tree should remain a classroom classifier unless it is retrained and re-evaluated with an approved feature set; the application should not be described as a diagnostic or dietitian substitute. Optical character recognition, wearable tracking, and remote AI APIs were excluded by the project rules and are not listed as unfinished requirements. 
 
 # **15\. REFERENCES**
 
