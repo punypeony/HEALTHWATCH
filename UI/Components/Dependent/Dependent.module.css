@@ -1,0 +1,188 @@
+.dependent {
+  	width: 100%;
+  	position: relative;
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	padding: 0px var(--padding-40);
+  	box-sizing: border-box;
+  	text-align: center;
+  	font-size: var(--fs-24);
+  	color: var(--color-white);
+  	font-family: var(--font-inter);
+}
+.name {
+  	border-radius: var(--br-30) var(--br-30) 0px 0px;
+  	background-color: var(--color-cadetblue);
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-20);
+}
+.dependentName {
+  	position: relative;
+  	font-weight: 600;
+}
+.dependent2 {
+  	align-self: stretch;
+  	border-radius: 0px var(--br-30) var(--br-30) var(--br-30);
+  	background-color: var(--color-gray-200);
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	padding: var(--padding-40);
+  	gap: 20px;
+  	color: var(--color-gold);
+}
+.details {
+  	align-self: stretch;
+  	overflow: hidden;
+  	display: flex;
+  	align-items: center;
+  	font-size: var(--fs-32);
+}
+.icon {
+  	height: 200px;
+  	width: 240px;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: 0px var(--padding-20);
+  	box-sizing: border-box;
+}
+.vectorIcon {
+  	height: 200px;
+  	width: 200px;
+  	position: relative;
+}
+.frame {
+  	flex: 1;
+  	overflow: hidden;
+  	display: grid;
+  	grid-template-columns: repeat(3, 1fr);
+  	align-content: start;
+  	column-gap: 20px;
+}
+.frame2 {
+  	border-radius: var(--br-15);
+  	background-color: var(--color-palegoldenrod);
+  	border: 1px solid var(--color-chocolate);
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-40) var(--padding-20);
+  	gap: var(--gap-10);
+  	grid-column: 1;
+  	grid-row: 1;
+}
+.frame3 {
+  	align-self: stretch;
+  	height: var(--height-23);
+  	display: flex;
+  	align-items: center;
+}
+.sodium {
+  	position: relative;
+  	flex-shrink: 0;
+}
+.frame4 {
+  	align-self: stretch;
+  	height: var(--height-23);
+  	display: flex;
+  	align-items: center;
+  	color: var(--color-gray-100);
+}
+.frame5 {
+  	border-radius: var(--br-15);
+  	background-color: var(--color-lavender);
+  	border: 1px solid var(--color-darkslateblue);
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-40) var(--padding-20);
+  	gap: var(--gap-10);
+  	grid-column: 2;
+  	grid-row: 1;
+  	color: var(--color-mediumslateblue);
+}
+.frame8 {
+  	border-radius: var(--br-15);
+  	background-color: var(--color-lightpink);
+  	border: 1px solid var(--color-red);
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-40) var(--padding-20);
+  	gap: var(--gap-10);
+  	grid-column: 3;
+  	grid-row: 1;
+  	color: var(--color-crimson);
+}
+.details2 {
+  	align-self: stretch;
+  	overflow: hidden;
+  	display: flex;
+  	align-items: center;
+  	padding: 0px var(--padding-10);
+  	color: var(--color-black);
+}
+.yearsOld {
+  	position: relative;
+}
+.conditions {
+  	align-self: stretch;
+  	overflow: hidden;
+  	display: flex;
+  	align-items: flex-start;
+  	flex-wrap: wrap;
+  	align-content: flex-start;
+  	gap: var(--gap-10);
+  	color: var(--color-darkcyan);
+}
+.frame11 {
+  	border-radius: var(--br-60);
+  	background-color: var(--color-azure);
+  	border: 1px solid var(--color-mediumseagreen);
+  	overflow: hidden;
+  	display: flex;
+  	align-items: flex-start;
+  	padding: var(--padding-10);
+}
+.buttons {
+  	align-self: stretch;
+  	overflow: hidden;
+  	display: flex;
+  	align-items: flex-start;
+  	gap: var(--gap-10);
+  	color: var(--color-white);
+}
+.frame13 {
+  	flex: 1;
+  	border-radius: var(--br-60);
+  	background-color: var(--color-lightseagreen);
+  	overflow: hidden;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-40);
+}
+.frame14 {
+  	flex: 1;
+  	border-radius: var(--br-60);
+  	border: 2px solid var(--color-lightseagreen);
+  	overflow: hidden;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-40);
+  	color: var(--color-darkcyan);
+}
+

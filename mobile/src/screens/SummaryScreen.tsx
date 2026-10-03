@@ -1,21 +1,22 @@
+import { Screen } from "../components/Screen";
+import { QueryRefreshNotice } from "../components/QueryRefreshNotice";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useCallback } from "react";
-import { ScrollView, Text } from "react-native";
 
 import { getWeeklySummary } from "../api";
-import { Card } from "../components/Card";
+import { OverviewCard } from "../components/OverviewCard";
+import { Button } from "../components/Button";
 import { ScreenStatus } from "../components/ScreenStatus";
 import { useFocusedQuery } from "../hooks/useFocusedQuery";
 import { screen } from "../theme/screen";
-import { typography } from "../theme/typography";
 import type { DependentTabParamList } from "../types";
 
 type Props = BottomTabScreenProps<DependentTabParamList, "Summary">;
 
-export function SummaryScreen({ route }: Props) {
+export function SummaryScreen({ route, navigation }: Props) {
   const { dependentId } = route.params;
   const load = useCallback(() => getWeeklySummary(dependentId), [dependentId]);
-  const summary = useFocusedQuery(load);
+  const summary = useFocusedQuery(`dependent:${dependentId}:summary`, load);
 
   if (summary.status === "loading") {
     return <ScreenStatus title="Summary" message="Loading weekly summary..." loading />;
@@ -34,17 +35,11 @@ export function SummaryScreen({ route }: Props) {
 
   const data = summary.data;
   return (
-    <ScrollView contentContainerStyle={screen.tabScroll}>
-      <Card>
-        <Text style={typography.body}>Safe: {data.safe_count}</Text>
-        <Text style={typography.body}>Warning: {data.warning_count}</Text>
-        <Text style={typography.body}>Danger: {data.danger_count}</Text>
-        <Text style={typography.body}>Total scans: {data.total_scans}</Text>
-        <Text style={typography.body}>Common reason: {data.common_reason ?? "None"}</Text>
-      </Card>
-      <Card>
-        <Text style={typography.body}>{data.text}</Text>
-      </Card>
-    </ScrollView>
+    <Screen title="Overview" contentContainerStyle={screen.tabScroll}>
+      <QueryRefreshNotice query={summary} />
+      <OverviewCard summary={data} />
+      <Button label="View scan history" onPress={() => navigation.navigate("History", { dependentId })} />
+      <Button label="Refresh" variant="secondary" onPress={summary.retry} />
+    </Screen>
   );
 }

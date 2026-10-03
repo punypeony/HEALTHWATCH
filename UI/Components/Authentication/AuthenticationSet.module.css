@@ -1,0 +1,153 @@
+.authentication {
+  	width: 100%;
+  	height: 2260px;
+  	position: relative;
+  	border-radius: 5px;
+  	border: 1px dashed var(--color-blueviolet);
+  	box-sizing: border-box;
+  	overflow: hidden;
+  	text-align: left;
+  	font-size: var(--fs-36);
+  	color: var(--color-white);
+  	font-family: var(--font-inter);
+}
+.property1login {
+  	position: absolute;
+  	top: 20px;
+  	left: 20px;
+  	width: 1060px;
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+}
+.frame {
+  	align-self: stretch;
+  	height: 1100px;
+  	border-radius: var(--br-60) var(--br-60) 0px 0px;
+  	background-color: var(--color-darkslategray);
+  	border-top: 10px solid var(--color-lightseagreen);
+  	box-sizing: border-box;
+  	overflow: hidden;
+  	flex-shrink: 0;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	padding: var(--padding-100);
+  	gap: var(--gap-20);
+}
+.welcomeBackYouve {
+  	position: relative;
+  	font-size: var(--fs-40);
+  	line-height: var(--lh-64);
+  	text-align: center;
+}
+.frame2 {
+  	align-self: stretch;
+  	height: var(--height-150);
+  	border-radius: var(--br-96);
+  	background-color: var(--color-white);
+  	overflow: hidden;
+  	flex-shrink: 0;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	justify-content: center;
+  	padding: var(--padding-60);
+  	box-sizing: border-box;
+  	color: var(--color-gray-100);
+}
+.enterYourEmail {
+  	position: relative;
+  	flex-shrink: 0;
+}
+.frame4 {
+  	align-self: stretch;
+  	height: var(--height-150);
+  	border-radius: var(--br-96);
+  	background-color: var(--color-lightseagreen);
+  	overflow: hidden;
+  	flex-shrink: 0;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-60);
+  	box-sizing: border-box;
+  	font-size: var(--fs-48);
+}
+.frame5 {
+  	align-self: stretch;
+  	flex: 1;
+  	overflow: hidden;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+}
+.frame6 {
+  	align-self: stretch;
+  	border-radius: var(--br-96);
+  	background-color: var(--color-white);
+  	overflow: hidden;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-60);
+  	color: var(--color-gray-200);
+}
+.dontHaveAnContainer {
+  	position: relative;
+}
+.b {
+  	color: var(--color-orange);
+}
+.signUp2 {
+  	text-decoration: underline;
+}
+.property1signUp {
+  	position: absolute;
+  	top: 1130px;
+  	left: 20px;
+  	width: 1060px;
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	color: var(--color-gray-100);
+}
+.welcomeAboardLets {
+  	position: relative;
+  	font-size: var(--fs-40);
+  	line-height: var(--lh-64);
+  	color: var(--color-white);
+  	text-align: center;
+}
+.frame8 {
+  	align-self: stretch;
+  	height: var(--height-150);
+  	border-radius: var(--br-96);
+  	background-color: var(--color-white);
+  	overflow: hidden;
+  	flex-shrink: 0;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	justify-content: center;
+  	padding: var(--padding-60);
+  	box-sizing: border-box;
+}
+.frame12 {
+  	align-self: stretch;
+  	height: var(--height-150);
+  	border-radius: var(--br-96);
+  	background-color: var(--color-lightseagreen);
+  	overflow: hidden;
+  	flex-shrink: 0;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-60);
+  	box-sizing: border-box;
+  	font-size: var(--fs-48);
+  	color: var(--color-white);
+}
+

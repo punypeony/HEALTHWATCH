@@ -1,4 +1,5 @@
 import { getAccessToken, notifyUnauthorized } from "./auth/accessToken";
+import { invalidateQueries } from "./utils/queryCache";
 import type {
   Alert,
   ApiErrorBody,
@@ -34,6 +35,7 @@ type RequestOptions = {
   method?: Method;
   body?: unknown;
   auth?: boolean;
+  timeoutMs?: number;
 };
 
 async function parseError(response: Response): Promise<ApiError> {
@@ -60,6 +62,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   }
 
   const useAuth = options.auth !== false;
+  const requestToken = getAccessToken();
   if (useAuth) {
     const token = getAccessToken();
     if (token) {
@@ -67,29 +70,43 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     }
   }
 
-  let response: Response;
+  const controller = new AbortController();
+  const timeoutMs = options.timeoutMs ?? ((options.method ?? "GET") === "GET" ? 15_000 : undefined);
+  const timeout = timeoutMs == null
+    ? undefined
+    : setTimeout(() => controller.abort(), timeoutMs);
   try {
-    response = await fetch(`${getApiBaseUrl()}${path}`, {
+    const response = await fetch(`${getApiBaseUrl()}${path}`, {
       method: options.method ?? "GET",
       headers,
       body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      signal: controller.signal,
     });
-  } catch {
-    throw new ApiError(0, "NETWORK_ERROR", `Unable to reach the server at ${getApiBaseUrl()}.`);
-  }
 
-  if (!response.ok) {
-    if (response.status === 401 && useAuth) {
-      notifyUnauthorized();
+    if (!response.ok) {
+      if (response.status === 401 && useAuth && requestToken === getAccessToken()) {
+        notifyUnauthorized();
+      }
+      throw await parseError(response);
     }
-    throw await parseError(response);
-  }
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
+    if (useAuth && options.method && options.method !== "GET" && requestToken === getAccessToken()) {
+      invalidateQueries();
+    }
+    if (response.status === 204) {
+      return undefined as T;
+    }
 
-  return (await response.json()) as T;
+    return (await response.json()) as T;
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new ApiError(0, "NETWORK_TIMEOUT", `The server at ${getApiBaseUrl()} did not respond in time. Check that the backend is running and your phone is on the same Wi-Fi, then try again.`);
+    }
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(0, "NETWORK_ERROR", `Unable to reach the server at ${getApiBaseUrl()}.`);
+  } finally {
+    if (timeout !== undefined) clearTimeout(timeout);
+  }
 }
 
 export function getHealth(): Promise<HealthResponse> {
@@ -109,6 +126,7 @@ export function login(input: LoginRequest): Promise<TokenResponse> {
     method: "POST",
     body: input,
     auth: false,
+    timeoutMs: 10_000,
   });
 }
 

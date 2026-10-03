@@ -1,6 +1,9 @@
+import { Screen } from "../components/Screen";
+import { NavigationBar } from "../components/NavigationBar";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 
 import { createDependent, deleteDependent, getDependent, updateDependent } from "../api";
 import { Button } from "../components/Button";
@@ -102,6 +105,7 @@ function hasCondition(conditions: string[], name: string): boolean {
 }
 
 export function DependentFormScreen({ navigation, route }: Props) {
+  const insets = useSafeAreaInsets();
   const dependentId = route.params?.dependentId;
   const [attempt, setAttempt] = useState(0);
   const [loadStatus, setLoadStatus] = useState<"loading" | "error" | "ready">(
@@ -301,11 +305,17 @@ export function DependentFormScreen({ navigation, route }: Props) {
   }
 
   return (
-    <ScrollView
+    <Screen
+      footer={dependentId ? <NavigationBar current="" bottomInset={insets.bottom} floating={false}
+        onSelect={tab => {
+          if (tab === "Home") { navigation.popToTop(); return; }
+          navigation.navigate("Dependent", { dependentId, dependentName: name, screen: tab, params: { dependentId } });
+        }} /> : <View style={{ padding: 16, paddingBottom: Math.max(insets.bottom, 16) }}><Button label="Home" onPress={() => navigation.popToTop()} /></View>}
       contentContainerStyle={screen.scroll}
       keyboardShouldPersistTaps="handled"
       automaticallyAdjustKeyboardInsets
     >
+      <Card>
       <Text style={typography.body}>
         Daily targets are calculated automatically from age, height, weight, sex, and recorded
         conditions. They are not entered by hand.
@@ -337,20 +347,22 @@ export function DependentFormScreen({ navigation, route }: Props) {
       />
       <View style={{ gap: spacing.xs }}>
         <Text style={typography.label}>Sex</Text>
-        <View style={{ flexDirection: "row", borderRadius: radius.pill, overflow: "hidden", borderWidth: 1, borderColor: colors.teal }}>
+        <View style={{ flexDirection: "row", borderRadius: radius.pill, overflow: "hidden", borderWidth: 1, borderColor: "#B8BEC5" }}>
           {(["male", "female"] as const).map((option) => (
             <Pressable
               key={option}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: sex === option }}
               onPress={() => setSex(option)}
               style={{
                 flex: 1,
-                backgroundColor: sex === option ? colors.teal : colors.white,
+                backgroundColor: sex === option ? (option === "male" ? "#CDE8FF" : "#FAD7E5") : colors.white,
                 minHeight: 44,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Text style={sex === option ? typography.button : typography.buttonDark}>
+              <Text style={[typography.buttonDark, sex === option && { fontWeight: "700", color: option === "male" ? "#245B85" : "#863B59" }]}>
                 {option === "male" ? "Male" : "Female"}
               </Text>
             </Pressable>
@@ -362,7 +374,7 @@ export function DependentFormScreen({ navigation, route }: Props) {
         <Pressable
           onPress={() => setAllergies([])}
           style={{
-            backgroundColor: allergies.length === 0 ? colors.ink : colors.white,
+            backgroundColor: allergies.length === 0 ? colors.tealSoft : colors.white,
             borderRadius: radius.pill,
             borderWidth: 1,
             borderColor: colors.teal,
@@ -371,7 +383,7 @@ export function DependentFormScreen({ navigation, route }: Props) {
             paddingHorizontal: spacing.md,
           }}
         >
-          <Text style={allergies.length === 0 ? typography.button : typography.buttonDark}>No known allergies</Text>
+          <Text style={[typography.buttonDark, allergies.length === 0 && { color: colors.forest, fontWeight: "700" }]}>No known allergies</Text>
         </Pressable>
         {ALLERGY_SHORTCUTS.map(([label, value]) => {
           const selected = allergies.some((item) => item.toLowerCase() === value);
@@ -380,7 +392,7 @@ export function DependentFormScreen({ navigation, route }: Props) {
               key={label}
               onPress={() => toggleAllergy(value)}
               style={{
-                backgroundColor: selected ? colors.ink : colors.white,
+                backgroundColor: selected ? colors.tealSoft : colors.white,
                 borderRadius: radius.pill,
                 borderWidth: 1,
                 borderColor: colors.teal,
@@ -389,7 +401,7 @@ export function DependentFormScreen({ navigation, route }: Props) {
                 paddingHorizontal: spacing.md,
               }}
             >
-              <Text style={selected ? typography.button : typography.buttonDark}>{label}</Text>
+              <Text style={[typography.buttonDark, selected && { color: colors.forest, fontWeight: "700" }]}>{label}</Text>
             </Pressable>
           );
         })}
@@ -419,9 +431,12 @@ export function DependentFormScreen({ navigation, route }: Props) {
         ).map(([label, checked, setChecked]) => (
           <Pressable
             key={label}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked }}
+            accessibilityLabel={label}
             onPress={() => setChecked((value) => !value)}
             style={{
-              backgroundColor: checked ? colors.ink : colors.white,
+              backgroundColor: checked ? colors.tealSoft : colors.white,
               borderWidth: 1,
               borderColor: colors.teal,
               borderRadius: radius.pill,
@@ -430,7 +445,7 @@ export function DependentFormScreen({ navigation, route }: Props) {
               paddingHorizontal: spacing.md,
             }}
           >
-            <Text style={checked ? typography.button : typography.buttonDark}>{label}</Text>
+            <Text style={[typography.buttonDark, checked && { color: colors.forest, fontWeight: "700" }]}>{checked ? "✓ " : "○ "}{label}</Text>
           </Pressable>
         ))}
       </View>
@@ -440,7 +455,7 @@ export function DependentFormScreen({ navigation, route }: Props) {
       {formError ? <Text style={typography.error}>{formError}</Text> : null}
       <Button
         label={dependentId ? "Save Changes" : "Add dependent"}
-        variant="save"
+        variant={dependentId ? "muted" : "save"}
         onPress={() => void onSubmit()}
         pending={submitting}
         disabled={deleting}
@@ -448,6 +463,7 @@ export function DependentFormScreen({ navigation, route }: Props) {
       {dependentId ? (
         <Button label="Delete Dependent" variant="danger" onPress={onDelete} pending={deleting} disabled={submitting} />
       ) : null}
-    </ScrollView>
+      </Card>
+    </Screen>
   );
 }

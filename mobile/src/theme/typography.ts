@@ -3,22 +3,22 @@ import { colors } from "./colors";
 /** Platform font. Sizes stay large enough to read on a phone. */
 export const typography = {
   brand: {
-    fontSize: 21,
-    lineHeight: 26,
-    fontWeight: "500" as const,
+    fontSize: 25,
+    lineHeight: 32,
+    fontWeight: "700" as const,
     color: colors.forest,
   },
   section: {
-    fontSize: 16,
-    lineHeight: 19,
-    fontWeight: "500" as const,
+    fontSize: 22,
+    lineHeight: 29,
+    fontWeight: "700" as const,
     color: colors.forest,
   },
   welcome: {
     fontSize: 16,
     lineHeight: 21,
     fontWeight: "700" as const,
-    color: colors.ink,
+    color: colors.white,
     textAlign: "center" as const,
   },
   button: {

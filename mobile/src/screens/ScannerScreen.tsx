@@ -1,13 +1,17 @@
+import { ScannerEntry } from "../components/ScannerEntry";
+import { useOverlayInsets } from "../components/OverlayInsets";
+import { Screen } from "../components/Screen";
+import { QueryRefreshNotice } from "../components/QueryRefreshNotice";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useCallback, useRef, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 
 import { ApiError, getDailyIntake, markMealEaten, scanDependent } from "../api";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { Field } from "../components/Field";
-import { RiskBadge } from "../components/RiskBadge";
+import { ResultCard } from "../components/ResultCard";
 import { ScreenStatus } from "../components/ScreenStatus";
 import { useFocusedQuery } from "../hooks/useFocusedQuery";
 import { colors } from "../theme/colors";
@@ -69,6 +73,7 @@ function failurePhase(error: unknown, lookup: Lookup): ScanPhase {
 }
 
 export function ScannerScreen({ route }: Props) {
+  const overlayInsets = useOverlayInsets();
   const { dependentId } = route.params;
   const [permission, requestPermission] = useCameraPermissions();
   const [phase, setPhase] = useState<ScanPhase>({ kind: "scan" });
@@ -228,30 +233,12 @@ export function ScannerScreen({ route }: Props) {
   if (phase.kind === "result") {
     const { result } = phase;
     return (
-      <ScrollView
+      <Screen title="Results"
         contentContainerStyle={screen.tabScroll}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
       >
-        <RiskBadge label={result.risk_label} />
-        <Text
-          style={{
-            fontSize: 22,
-            lineHeight: 28,
-            fontWeight: "700",
-            color: colors.ink,
-          }}
-        >
-          {result.product.name}
-        </Text>
-        <Card>
-          <Text style={typography.label}>Why?</Text>
-          {result.reasons.map((reason, index) => (
-            <Text key={`${result.meal_log_id}-${index}`} style={typography.body}>
-              • {reason}
-            </Text>
-          ))}
-        </Card>
+        <ResultCard result={result} />
         <Card>
           <Text style={typography.body}>{nutritionBasis(result.product.barcode)}</Text>
           <Text style={[typography.label, { color: colors.calorie }]}>
@@ -321,24 +308,24 @@ export function ScannerScreen({ route }: Props) {
           <Button label="Eaten" onPress={() => beginEaten(result)} />
         )}
         <Button label="Scan again" variant="secondary" onPress={scanAgain} />
-      </ScrollView>
+      </Screen>
     );
   }
 
   if (phase.kind === "error") {
     return (
-      <ScrollView
+      <Screen title="Scanner"
         contentContainerStyle={screen.tabScroll}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
       >
         <Text style={typography.section}>{phase.title}</Text>
-        <Text style={typography.error}>{phase.message}</Text>
+        <Card><Text style={typography.error}>{phase.message}</Text></Card>
         {phase.canRetry ? (
           <Button label="Retry" onPress={() => void submitLookup(phase.lookup)} />
         ) : null}
         <Button label="Scan again" variant="secondary" onPress={scanAgain} />
-        <ManualEntryForm
+        <ScannerEntry
           barcode={draft}
           dishName={dishDraft}
           onBarcodeChange={setDraft}
@@ -350,13 +337,13 @@ export function ScannerScreen({ route }: Props) {
             void submitLookup({ source: "dish", value: dishDraft.trim() });
           }}
         />
-      </ScrollView>
+      </Screen>
     );
   }
 
   if (phase.kind === "manual" || !permission.granted) {
     return (
-      <ScrollView
+      <Screen title="Scanner"
         contentContainerStyle={screen.tabScroll}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
@@ -367,11 +354,11 @@ export function ScannerScreen({ route }: Props) {
           <Text style={typography.body}>Camera permission is required to scan. You can enter a barcode instead.</Text>
         )}
         {permission.granted ? (
-          <Button label="Use camera" onPress={() => setPhase({ kind: "scan" })} />
+          <Button icon="camera" variant="save" label="Use Camera" onPress={() => setPhase({ kind: "scan" })} />
         ) : (
-          <Button label="Allow camera" onPress={() => void requestPermission()} />
+          <Button icon="camera" variant="save" label="Allow camera" onPress={() => void requestPermission()} />
         )}
-        <ManualEntryForm
+        <ScannerEntry
           barcode={draft}
           dishName={dishDraft}
           onBarcodeChange={setDraft}
@@ -383,7 +370,7 @@ export function ScannerScreen({ route }: Props) {
             void submitLookup({ source: "dish", value: dishDraft.trim() });
           }}
         />
-      </ScrollView>
+      </Screen>
     );
   }
 
@@ -405,9 +392,10 @@ export function ScannerScreen({ route }: Props) {
           void submitLookup({ source: "barcode", value: data.trim() });
         }}
       />
-      <View style={styles.overlay}>
+      <View pointerEvents="none" style={styles.viewfinder}><View style={styles.scanFrame} /></View>
+      <View style={[styles.overlay, { bottom: overlayInsets.bottom + 8 }]}>
         <Text style={typography.body}>Point the camera at a barcode.</Text>
-        <Button label="Enter barcode manually" onPress={() => setPhase({ kind: "manual" })} />
+        <Button label="Enter barcode or dish name" onPress={() => setPhase({ kind: "manual" })} />
       </View>
     </View>
   );
@@ -447,7 +435,8 @@ function DailyLimitNote({
   sugarG: number;
 }) {
   const load = useCallback(() => getDailyIntake(dependentId), [dependentId]);
-  const intake = useFocusedQuery(load);
+  const intake = useFocusedQuery(`dependent:${dependentId}:intake`, load);
+  if (intake.refreshError) return <QueryRefreshNotice query={intake} />;
   if (intake.status !== "success") {
     return null;
   }
@@ -469,37 +458,6 @@ function DailyLimitNote({
   );
 }
 
-function ManualEntryForm({
-  barcode,
-  dishName,
-  onBarcodeChange,
-  onDishChange,
-  onBarcodeSubmit,
-  onDishSubmit,
-}: {
-  barcode: string;
-  dishName: string;
-  onBarcodeChange: (value: string) => void;
-  onDishChange: (value: string) => void;
-  onBarcodeSubmit: () => void;
-  onDishSubmit: () => void;
-}) {
-  return (
-    <Card>
-      <Field
-        label="Barcode"
-        value={barcode}
-        onChangeText={onBarcodeChange}
-        keyboardType="number-pad"
-        onSubmitEditing={onBarcodeSubmit}
-      />
-      <Button label="Look up barcode" onPress={onBarcodeSubmit} />
-      <Field label="Dish name" value={dishName} onChangeText={onDishChange} onSubmitEditing={onDishSubmit} />
-      <Button label="Look up dish" variant="secondary" onPress={onDishSubmit} />
-    </Card>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -507,9 +465,15 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
   },
+  viewfinder: { position: "absolute", top: "20%", left: "10%", right: "10%", height: "35%", alignItems: "center", justifyContent: "center" },
+  scanFrame: { width: "100%", height: "100%", borderWidth: 3, borderColor: colors.white, borderRadius: 24 },
   overlay: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    borderRadius: 20,
     padding: 16,
     gap: 8,
-    backgroundColor: colors.white,
+    backgroundColor: colors.card,
   },
 });

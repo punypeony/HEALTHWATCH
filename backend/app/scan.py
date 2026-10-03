@@ -99,6 +99,12 @@ def has_condition(conditions, name: str) -> bool:
     return name in {value.strip().lower() for value in conditions}
 
 
+def matching_allergens(allergies, raw_response) -> list[str]:
+    """Return recorded allergy names using the same exact/alias risk checks."""
+    return sorted({allergy.strip().lower() for allergy in allergies
+                   if check_allergy_match([allergy], raw_response)})
+
+
 def has_high_cholesterol(conditions) -> bool:
     return has_condition(conditions, 'high cholesterol')
 
@@ -318,9 +324,11 @@ def create_alert_if_needed(session, meal) -> Alert | None:
 
 
 def return_scan_result(product, percentages, prediction, meal, alert,
-                       saturated_fat_g=None, carbohydrate_g=None, protein_g=None) -> ScanOutput:
+                       saturated_fat_g=None, carbohydrate_g=None, protein_g=None,
+                       allergies=()) -> ScanOutput:
     # Validate and copy response before committing; no lazy DB reads afterwards.
     return ScanOutput(**prediction,
+                      matched_allergens=matching_allergens(allergies, product.get('raw_response', {})),
                       product={key: product[key] for key in
                                ('barcode', 'name', 'calories', 'sodium_mg', 'sugar_g')},
                       percentages=percentages, meal_log_id=meal.id,

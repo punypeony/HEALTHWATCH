@@ -1255,3 +1255,12 @@ On Demo Hypertension, these barcodes stay:
 Do not add `high cholesterol`, `diabetic`, or `kidney disease` to Demo Hypertension or Demo Diabetes. Do not add image recognition or a remote inference API.
 
 Do not rewrite working backend logic merely to change the visual design.
+
+## 33. DEPENDENT PROFILE PHOTOS
+
+The user approved `expo-image-picker` and `expo-file-system` for dependent profile photos. This is a specific exception to the dependency approval rule; other new dependencies still require approval.
+
+- Tapping the dependent card profile icon opens the image library.
+- Accept JPEG images only (`.jpg` or `.jpeg`), at most 5 MB (5 * 1024 * 1024 bytes). Validate actual file size and JPEG signature before saving; do not trust the filename alone.
+- Save photos in the app's local document storage on the phone. Photos do not upload to the backend or sync between devices.
+- Cancellation or invalid selections must preserve the previous photo and show a clear error for invalid files.

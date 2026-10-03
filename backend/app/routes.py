@@ -176,6 +176,7 @@ def scan_product(id: RecordId, data: ScanInput, session: DbSession, user: Curren
         alert = create_alert_if_needed(session, meal)
         result = return_scan_result(
             product, percentages, prediction, meal, alert,
+            allergies=profile.allergies,
             saturated_fat_g=reported_grams(saturated_fat_grams, saturated_fat_pct),
             carbohydrate_g=reported_grams(carbohydrate_grams, carbohydrate_pct),
             protein_g=reported_grams(protein_grams, protein_pct))

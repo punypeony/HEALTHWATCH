@@ -1,0 +1,182 @@
+.scannerLoader {
+  	width: 100%;
+  	position: relative;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	padding: var(--padding-40);
+  	box-sizing: border-box;
+  	text-align: center;
+  	font-size: 48px;
+  	color: var(--color-gray-200);
+  	font-family: var(--font-inter);
+}
+.frame {
+  	align-self: stretch;
+  	border-radius: 30px;
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	justify-content: center;
+  	padding: 0px var(--padding-20);
+  	gap: 40px;
+}
+.frame2 {
+  	align-self: stretch;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+}
+.frame3 {
+  	align-self: stretch;
+  	display: flex;
+  	align-items: center;
+  	justify-content: space-between;
+  	padding: var(--padding-40) 0px;
+  	gap: var(--gap-20);
+}
+.scanner {
+  	position: relative;
+  	font-weight: 600;
+}
+.button {
+  	height: 50px;
+  	width: 50px;
+  	border-radius: 154px;
+  	border: 3px solid var(--color-black);
+  	box-sizing: border-box;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: 10px 19px;
+}
+.arrowBackIcon {
+  	height: 50px;
+  	width: 50px;
+  	position: relative;
+  	flex-shrink: 0;
+}
+.frame4 {
+  	align-self: stretch;
+  	display: flex;
+  	align-items: flex-start;
+  	font-size: var(--fs-24);
+}
+.enterTheBarcode {
+  	position: relative;
+}
+.frame5 {
+  	align-self: stretch;
+  	border-radius: var(--br-60);
+  	background-color: var(--color-mediumseagreen);
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-40) var(--padding-20);
+  	gap: var(--gap-20);
+  	font-size: 40px;
+  	color: var(--color-whitesmoke);
+}
+.camera {
+  	height: 50px;
+  	width: 50px;
+  	position: relative;
+  	overflow: hidden;
+  	flex-shrink: 0;
+}
+.icon {
+  	position: absolute;
+  	height: 75%;
+  	width: 91.6%;
+  	top: 12.5%;
+  	right: 4.23%;
+  	bottom: 12.5%;
+  	left: 4.17%;
+  	max-width: 100%;
+  	overflow: hidden;
+  	max-height: 100%;
+}
+.frame6 {
+  	align-self: stretch;
+  	border-radius: var(--br-60);
+  	background-color: var(--color-gray-400);
+  	overflow: hidden;
+  	display: grid;
+  	grid-template-columns: 1fr;
+  	align-content: start;
+  	font-size: var(--fs-32);
+  	color: var(--color-gray-300);
+}
+.frame7 {
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	padding: var(--padding-40);
+  	gap: var(--gap-20);
+  	grid-column: 1;
+  	grid-row: 1;
+}
+.frame8 {
+  	align-self: stretch;
+  	display: flex;
+  	align-items: flex-start;
+}
+.frame9 {
+  	align-self: stretch;
+  	border-radius: var(--br-15);
+  	border: 1px solid var(--color-gray-100);
+  	display: flex;
+  	align-items: center;
+  	padding: var(--padding-20);
+  	font-size: var(--fs-24);
+  	color: var(--color-dimgray);
+}
+.frame10 {
+  	align-self: stretch;
+  	border-radius: var(--br-60);
+  	background-color: var(--color-gray-300);
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-20);
+  	color: var(--color-whitesmoke);
+}
+.frameInner {
+  	display: flex;
+  	align-items: center;
+  	padding: 0px var(--padding-40);
+  	grid-column: 1;
+  	grid-row: 2;
+}
+.frameChild {
+  	height: 1px;
+  	flex: 1;
+  	position: relative;
+  	border-top: 1px solid var(--color-black);
+  	box-sizing: border-box;
+  	transform:  rotate(-0.1deg);
+}
+.frame11 {
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	padding: var(--padding-40);
+  	gap: var(--gap-20);
+  	grid-column: 1;
+  	grid-row: 3;
+}
+.frame14 {
+  	align-self: stretch;
+  	border-radius: var(--br-60);
+  	background-color: var(--color-white);
+  	border: 1px solid var(--color-mediumseagreen);
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-20);
+  	color: var(--color-gray-200);
+}
+

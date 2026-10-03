@@ -1,0 +1,178 @@
+.navigation {
+  	width: 100%;
+  	position: relative;
+  	border-radius: 5px;
+  	border: 1px dashed var(--color-blueviolet);
+  	box-sizing: border-box;
+  	overflow: hidden;
+  	display: grid;
+  	grid-template-columns: repeat(2, 1fr);
+  	align-content: start;
+  	gap: 120px;
+  	padding-left: var(--padding-20);
+  	padding-right: var(--padding-20);
+  	padding-top: var(--padding-20);
+  	padding-bottom: var(--padding-20);
+  	text-align: center;
+  	font-size: var(--fs-24);
+  	color: var(--color-white);
+  	font-family: var(--font-inter);
+}
+.property1variant2 {
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-80) var(--padding-10);
+  	position: relative;
+  	isolation: isolate;
+  	grid-column: 1;
+  	grid-row: 1;
+  	color: var(--color-black);
+}
+.frame {
+  	height: 160px;
+  	margin: 0 !important;
+  	position: absolute;
+  	top: calc(50% - 79.5px);
+  	left: calc(50% - 394.5px);
+  	box-shadow: var(--shadow-drop);
+  	border-radius: 150px;
+  	background-color: var(--color-gray);
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	z-index: 0;
+  	flex-shrink: 0;
+}
+.homeParent {
+  	align-self: stretch;
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-0) var(--padding-20) var(--padding-0) var(--padding-60);
+}
+.homeIcon {
+  	width: var(--width-40);
+  	height: var(--height-40);
+  	position: relative;
+}
+.home {
+  	position: relative;
+  	font-weight: 600;
+}
+.historyParent {
+  	align-self: stretch;
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-0) var(--padding-0) var(--padding-0) var(--padding-40);
+}
+.frameWrapper {
+  	align-self: stretch;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	justify-content: flex-end;
+  	padding: var(--padding-0) var(--padding-20) var(--padding-60);
+}
+.frame2 {
+  	border-radius: 165px;
+  	background-color: var(--color-white);
+  	border: 3px solid var(--color-mediumseagreen);
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	justify-content: center;
+  	padding: var(--padding-40);
+  	flex-shrink: 0;
+}
+.scanIcon {
+  	width: 100px;
+  	height: 100px;
+  	position: relative;
+}
+.inboxParent {
+  	align-self: stretch;
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-0) var(--padding-40) var(--padding-0) var(--padding-0);
+}
+.alertCircleParent {
+  	align-self: stretch;
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-0) var(--padding-60) var(--padding-0) var(--padding-20);
+}
+.property1buttons {
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-80) var(--padding-10);
+  	grid-column: 2;
+  	grid-row: 1;
+}
+.buttons {
+  	flex: 1;
+  	display: flex;
+  	align-items: flex-start;
+  	padding: var(--padding-0) 120px;
+  	box-sizing: border-box;
+  	gap: var(--gap-10);
+  	max-width: 100%;
+}
+.frame3 {
+  	flex: 1;
+  	box-shadow: var(--shadow-drop);
+  	border-radius: var(--br-60);
+  	background-color: var(--color-lightseagreen);
+  	overflow: hidden;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-40);
+}
+.add {
+  	position: relative;
+}
+.frame4 {
+  	flex: 1;
+  	box-shadow: var(--shadow-drop);
+  	border-radius: var(--br-60);
+  	background-color: var(--color-gray);
+  	border: 2px solid var(--color-lightseagreen);
+  	overflow: hidden;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-40);
+  	color: var(--color-darkcyan);
+}
+.property1variant4 {
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-80) var(--padding-10);
+  	grid-column: 1;
+  	grid-row: 2;
+}
+.buttons2 {
+  	flex: 1;
+  	overflow: hidden;
+  	display: flex;
+  	align-items: flex-start;
+  	padding: var(--padding-0) 120px;
+  	box-sizing: border-box;
+  	gap: var(--gap-10);
+  	max-width: 100%;
+}
+

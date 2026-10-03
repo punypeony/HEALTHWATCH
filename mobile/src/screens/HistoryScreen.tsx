@@ -1,68 +1,25 @@
+import { Screen } from "../components/Screen";
+import { QueryRefreshNotice } from "../components/QueryRefreshNotice";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useCallback, useState } from "react";
-import { Alert, Image, ScrollView, Text, View } from "react-native";
+import { Alert } from "react-native";
 
 import { deleteMeal, deleteMeals, listMeals } from "../api";
 import { Button } from "../components/Button";
-import { RiskBadge } from "../components/RiskBadge";
+import { HistoryCard } from "../components/HistoryCard";
+import { Card } from "../components/Card";
 import { ScreenStatus } from "../components/ScreenStatus";
 import { useFocusedQuery } from "../hooks/useFocusedQuery";
-import { colors } from "../theme/colors";
-import { radius, spacing } from "../theme/spacing";
 import { screen } from "../theme/screen";
-import { typography } from "../theme/typography";
 import type { DependentTabParamList } from "../types";
 import { errorMessage } from "../utils/errors";
-import { formatWhen, nutritionBasis, twoDecimals } from "../utils/format";
 
 type Props = BottomTabScreenProps<DependentTabParamList, "History">;
-
-function historyNutrient(
-  per100g: number,
-  gramsEaten: number | null | undefined,
-  unit: string,
-  name: string,
-): string {
-  if (gramsEaten != null && gramsEaten > 0) {
-    const scaled = Math.round((per100g * gramsEaten) / 100 * 100) / 100;
-    return `${name} ${twoDecimals(scaled)} ${unit} eaten`;
-  }
-  return `${name} ${per100g} ${unit}`;
-}
-
-function ProductPhoto({ uri }: { uri?: string | null }) {
-  const [failed, setFailed] = useState(false);
-  if (!uri || failed) {
-    return (
-      <View
-        style={{
-          width: 56,
-          height: 56,
-          borderRadius: 28,
-          backgroundColor: colors.avatar,
-        }}
-      />
-    );
-  }
-  return (
-    <Image
-      accessibilityLabel="Product photo"
-      source={{ uri }}
-      onError={() => setFailed(true)}
-      style={{
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: colors.avatar,
-      }}
-    />
-  );
-}
 
 export function HistoryScreen({ route }: Props) {
   const { dependentId } = route.params;
   const load = useCallback(() => listMeals(dependentId), [dependentId]);
-  const meals = useFocusedQuery(load);
+  const meals = useFocusedQuery(`dependent:${dependentId}:meals`, load);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function removeOne(mealId: number) {
@@ -107,7 +64,7 @@ export function HistoryScreen({ route }: Props) {
     return (
       <ScreenStatus
         title="Scan History"
-        message="No meals logged for this dependent yet."
+        message={meals.refreshError ? `Showing previously loaded history. Refresh failed: ${meals.refreshError}` : meals.refreshing ? "Updating history…" : "No meals logged for this dependent yet."}
         actionLabel="Refresh"
         onAction={meals.retry}
       />
@@ -115,7 +72,8 @@ export function HistoryScreen({ route }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={screen.tabScroll}>
+    <Screen title="Scan history" contentContainerStyle={screen.tabScroll}>
+      <QueryRefreshNotice query={meals} />
       <Button
         label="Clear history"
         variant="danger"
@@ -126,54 +84,15 @@ export function HistoryScreen({ route }: Props) {
           ])
         }
       />
-      {meals.data.map((meal) => (
-        <View
-          key={meal.id}
-          style={{
-            backgroundColor: colors.white,
-            borderWidth: 1,
-            borderColor: colors.avatar,
-            borderRadius: radius.card,
-            padding: spacing.sm,
-            gap: spacing.sm,
-            flexDirection: "row",
-            alignItems: "center",
-          }}
-        >
-          <ProductPhoto uri={meal.image_url} />
-          <View style={{ flex: 1, gap: spacing.xs }}>
-            <RiskBadge label={meal.risk_label} />
-            <Text style={typography.label}>{meal.product_name}</Text>
-            <Text style={typography.body}>{nutritionBasis(meal.barcode)}</Text>
-            <Text style={[typography.body, { color: colors.sodium }]}>
-              {historyNutrient(meal.sodium_mg, meal.grams_eaten, "mg", "Sodium")}
-            </Text>
-            <Text style={[typography.body, { color: colors.calorie }]}>
-              {historyNutrient(meal.calories, meal.grams_eaten, "kcal", "Calories")}
-            </Text>
-            <Text style={[typography.body, { color: colors.sugar }]}>
-              {historyNutrient(meal.sugar_g, meal.grams_eaten, "g", "Sugar")}
-            </Text>
-            <Text style={typography.body}>{formatWhen(meal.created_at)}</Text>
-            {meal.risk_reasons.map((reason, index) => (
-              <Text key={`${meal.id}-${index}`} style={typography.body}>
-                {reason}
-              </Text>
-            ))}
-            <Button
-              label="Delete"
-              variant="danger"
-              onPress={() =>
-                Alert.alert("Delete scan", meal.product_name, [
-                  { text: "Cancel", style: "cancel" },
-                  { text: "Delete", onPress: () => void removeOne(meal.id) },
-                ])
-              }
-            />
-          </View>
-        </View>
-      ))}
+      <Card>
+        {meals.data.map(meal => <HistoryCard key={meal.id} meal={meal} onDelete={() =>
+          Alert.alert("Delete scan", meal.product_name, [
+            { text: "Cancel", style: "cancel" },
+            { text: "Delete", style: "destructive", onPress: () => void removeOne(meal.id) },
+          ])
+        } />)}
+      </Card>
       <Button label="Refresh" variant="secondary" onPress={meals.retry} />
-    </ScrollView>
+    </Screen>
   );
 }

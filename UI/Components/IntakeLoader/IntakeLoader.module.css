@@ -1,0 +1,133 @@
+.intakeLoader {
+  	width: 100%;
+  	position: relative;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	padding: 0px var(--padding-40);
+  	box-sizing: border-box;
+  	gap: var(--gap-10);
+  	text-align: center;
+  	font-size: 48px;
+  	color: var(--color-gray-100);
+  	font-family: var(--font-inter);
+}
+.frame {
+  	align-self: stretch;
+  	display: flex;
+  	align-items: center;
+  	justify-content: space-between;
+  	padding: var(--padding-40) 0px;
+  	gap: 20px;
+}
+.intake {
+  	position: relative;
+  	font-weight: 600;
+}
+.button {
+  	height: 50px;
+  	width: 50px;
+  	border-radius: 154px;
+  	border: 3px solid var(--color-black);
+  	box-sizing: border-box;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: 10px 19px;
+}
+.arrowBackIcon {
+  	height: 50px;
+  	width: 50px;
+  	position: relative;
+  	flex-shrink: 0;
+}
+.frame2 {
+  	align-self: stretch;
+  	border-radius: 30px;
+  	background-color: var(--color-gray-200);
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	justify-content: center;
+  	padding: var(--padding-40);
+  	font-size: var(--fs-32);
+}
+.frame3 {
+  	align-self: stretch;
+  	overflow: hidden;
+  	display: grid;
+  	grid-template-columns: 1fr;
+  	align-content: start;
+  	row-gap: 20px;
+}
+.frame4 {
+  	border-radius: var(--br-15);
+  	background-color: var(--color-lavender);
+  	border: 1px solid var(--color-darkslateblue);
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	padding: var(--padding-40) var(--padding-20);
+  	gap: var(--gap-10);
+  	grid-column: 1;
+  	grid-row: 1;
+}
+.frame5 {
+  	align-self: stretch;
+  	display: flex;
+  	align-items: flex-start;
+  	color: var(--color-mediumslateblue);
+}
+.calorie {
+  	position: relative;
+}
+.frame6 {
+  	align-self: stretch;
+  	display: flex;
+  	align-items: flex-start;
+}
+.kcal {
+  	position: relative;
+  	font-weight: 500;
+}
+.frame9 {
+  	border-radius: var(--br-15);
+  	background-color: var(--color-palegoldenrod);
+  	border: 1px solid var(--color-chocolate);
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	padding: var(--padding-40) var(--padding-20);
+  	gap: var(--gap-10);
+  	grid-column: 1;
+  	grid-row: 2;
+}
+.frame10 {
+  	align-self: stretch;
+  	display: flex;
+  	align-items: flex-start;
+  	color: var(--color-gold);
+}
+.frame14 {
+  	border-radius: var(--br-15);
+  	background-color: var(--color-lightpink);
+  	border: 1px solid var(--color-red);
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	padding: var(--padding-40) var(--padding-20);
+  	gap: var(--gap-10);
+  	grid-column: 1;
+  	grid-row: 3;
+}
+.frame15 {
+  	align-self: stretch;
+  	display: flex;
+  	align-items: flex-start;
+  	color: var(--color-crimson);
+}
+

@@ -1,0 +1,41 @@
+.status {
+  	position: relative;
+  	border-radius: 5px;
+  	border: 1px dashed var(--color-blueviolet);
+  	box-sizing: border-box;
+  	width: 100%;
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	gap: 20px;
+  	text-align: left;
+  	font-size: var(--fs-24);
+  	color: var(--color-gray);
+  	font-family: var(--font-inter);
+}
+.property1low {
+  	align-self: stretch;
+  	height: var(--height-48);
+  	display: flex;
+  	align-items: center;
+}
+.text {
+  	position: relative;
+  	font-weight: 600;
+}
+.property1medium {
+  	align-self: stretch;
+  	height: var(--height-48);
+  	display: flex;
+  	align-items: center;
+  	color: var(--color-saddlebrown);
+}
+.property1high {
+  	align-self: stretch;
+  	height: var(--height-48);
+  	display: flex;
+  	align-items: center;
+  	color: var(--color-firebrick);
+}
+

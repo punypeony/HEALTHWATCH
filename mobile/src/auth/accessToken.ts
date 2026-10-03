@@ -1,3 +1,5 @@
+import { clearQueryCache } from "../utils/queryCache";
+
 let accessToken: string | null = null;
 let onUnauthorized: (() => void) | null = null;
 
@@ -6,6 +8,7 @@ export function getAccessToken(): string | null {
 }
 
 export function setAccessToken(token: string | null): void {
+  if (token !== accessToken) clearQueryCache();
   accessToken = token;
 }
 

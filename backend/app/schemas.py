@@ -25,7 +25,8 @@ class LoginInput(InputModel):
 
 
 class RegisterInput(LoginInput):
-    name: Name
+    # Sign-up requires email/password only; retain the database display-name field.
+    name: Name = 'Caregiver'
     password: Annotated[str, Field(min_length=8, max_length=1024)]
 
 
@@ -247,6 +248,7 @@ class VitaminOutput(BaseModel):
 
 
 class ScanOutput(BaseModel):
+    matched_allergens: list[str] = Field(default_factory=list)
     risk_label: Literal['safe', 'warning', 'danger']
     product: ScanProductOutput
     percentages: PercentagesOutput

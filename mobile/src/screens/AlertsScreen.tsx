@@ -1,25 +1,26 @@
+import { Screen } from "../components/Screen";
+import { QueryRefreshNotice } from "../components/QueryRefreshNotice";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useCallback, useState } from "react";
-import { ScrollView, Text } from "react-native";
+import { Text } from "react-native";
 
 import { acknowledgeAlert, listAlerts } from "../api";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
-import { RiskBadge } from "../components/RiskBadge";
+import { AlertCard } from "../components/AlertCard";
 import { ScreenStatus } from "../components/ScreenStatus";
 import { useFocusedQuery } from "../hooks/useFocusedQuery";
 import { screen } from "../theme/screen";
 import { typography } from "../theme/typography";
-import type { Alert, DependentTabParamList } from "../types";
+import type { DependentTabParamList } from "../types";
 import { errorMessage } from "../utils/errors";
-import { formatWhen } from "../utils/format";
 
 type Props = BottomTabScreenProps<DependentTabParamList, "Alerts">;
 
 export function AlertsScreen({ route }: Props) {
   const { dependentId } = route.params;
   const load = useCallback(() => listAlerts(dependentId), [dependentId]);
-  const alerts = useFocusedQuery(load);
+  const alerts = useFocusedQuery(`dependent:${dependentId}:alerts`, load);
   const [pendingId, setPendingId] = useState<number | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -49,9 +50,11 @@ export function AlertsScreen({ route }: Props) {
   const active = alerts.data.filter((alert) => alert.status === "active");
 
   return (
-    <ScrollView contentContainerStyle={screen.tabScroll}>
-      {active.length === 0 ? <Text style={typography.body}>No active alerts.</Text> : null}
+    <Screen title="Alerts" contentContainerStyle={screen.tabScroll}>
+      <QueryRefreshNotice query={alerts} />
+      {active.length === 0 ? <Card><Text style={typography.body}>No active alerts.</Text></Card> : null}
       {actionError ? <Text style={typography.error}>{actionError}</Text> : null}
+      <Card>
       {alerts.data.map((alert) => (
         <AlertCard
           key={alert.id}
@@ -62,31 +65,8 @@ export function AlertsScreen({ route }: Props) {
           }}
         />
       ))}
+      </Card>
       <Button label="Refresh" variant="secondary" onPress={alerts.retry} />
-    </ScrollView>
-  );
-}
-
-function AlertCard({
-  alert,
-  pending,
-  onAcknowledge,
-}: {
-  alert: Alert;
-  pending: boolean;
-  onAcknowledge: () => void;
-}) {
-  const acknowledged = alert.status === "acknowledged";
-  return (
-    <Card>
-      <Text style={typography.section}>{alert.product_name}</Text>
-      <RiskBadge label={alert.risk_label} />
-      <Text style={typography.body}>{alert.message}</Text>
-      <Text style={typography.body}>{formatWhen(alert.created_at)}</Text>
-      <Text style={typography.muted}>{acknowledged ? "Acknowledged" : "Active"}</Text>
-      {acknowledged ? null : (
-        <Button label="Acknowledge" variant="save" onPress={onAcknowledge} pending={pending} />
-      )}
-    </Card>
+    </Screen>
   );
 }

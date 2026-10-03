@@ -14,7 +14,7 @@ export type RiskLabel = "safe" | "warning" | "danger";
 export type AlertStatus = "active" | "acknowledged";
 
 export type RegisterRequest = {
-  name: string;
+  name?: string;
   email: string;
   password: string;
 };
@@ -118,6 +118,7 @@ export type ScanPercentages = {
 };
 
 export type ScanResult = {
+  matched_allergens?: string[];
   risk_label: RiskLabel;
   product: ScanProduct;
   percentages: ScanPercentages;
@@ -162,7 +163,7 @@ export type AuthStackParamList = {
 export type AppStackParamList = {
   Dependents: undefined;
   DependentForm: { dependentId?: number } | undefined;
-  Dependent: { dependentId: number; dependentName: string };
+  Dependent: { dependentId: number; dependentName: string; screen?: keyof DependentTabParamList; params?: { dependentId: number } };
 };
 
 export type DependentTabParamList = {

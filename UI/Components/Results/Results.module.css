@@ -1,0 +1,131 @@
+.results {
+  	width: 100%;
+  	position: relative;
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	padding: 0px var(--padding-40) 260px;
+  	box-sizing: border-box;
+  	text-align: center;
+  	font-size: 48px;
+  	color: var(--color-black);
+  	font-family: var(--font-inter);
+}
+.frame {
+  	align-self: stretch;
+  	overflow: hidden;
+  	display: flex;
+  	align-items: center;
+  	justify-content: space-between;
+  	padding: var(--padding-40) 0px;
+  	gap: var(--gap-20);
+}
+.results2 {
+  	position: relative;
+  	font-weight: 600;
+}
+.button {
+  	height: 50px;
+  	width: 50px;
+  	border-radius: 154px;
+  	border: 3px solid var(--color-black);
+  	box-sizing: border-box;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-10) 19px;
+}
+.arrowBackIcon {
+  	height: 50px;
+  	width: 50px;
+  	position: relative;
+  	flex-shrink: 0;
+}
+.details {
+  	align-self: stretch;
+  	border-radius: var(--br-30);
+  	background-color: var(--color-gray-200);
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	padding: var(--padding-40);
+  	gap: var(--gap-20);
+  	text-align: left;
+  	font-size: var(--fs-36);
+  	color: var(--color-gray-100);
+}
+.frame2 {
+  	align-self: stretch;
+  	display: flex;
+  	align-items: center;
+  	font-size: var(--fs-32);
+  	color: var(--color-dimgray);
+}
+.frame3 {
+  	border-radius: 15px;
+  	background-color: var(--color-whitesmoke);
+  	overflow: hidden;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-10);
+}
+.textValue {
+  	position: relative;
+  	font-weight: 500;
+}
+.frame5 {
+  	flex: 1;
+  	overflow: hidden;
+  	display: flex;
+  	align-items: flex-start;
+  	flex-wrap: wrap;
+  	align-content: flex-start;
+}
+.textValue2 {
+  	flex: 1;
+  	position: relative;
+  	font-weight: 500;
+}
+.frame6 {
+  	align-self: stretch;
+  	border-radius: var(--br-30);
+  	background-color: var(--color-white);
+  	border: 1px solid var(--color-darkgray);
+  	overflow: hidden;
+  	display: flex;
+  	align-items: center;
+  	padding: var(--padding-20) var(--padding-30);
+}
+.buttons {
+  	align-self: stretch;
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	color: var(--color-whitesmoke);
+}
+.frame8 {
+  	align-self: stretch;
+  	border-radius: var(--br-30);
+  	background-color: var(--color-black);
+  	overflow: hidden;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-20) 0px;
+}
+.frame9 {
+  	align-self: stretch;
+  	border-radius: var(--br-30);
+  	background-color: var(--color-white);
+  	border: 1px solid var(--color-darkslategray);
+  	overflow: hidden;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-20) 0px;
+}
+

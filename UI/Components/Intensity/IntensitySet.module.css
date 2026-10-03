@@ -1,0 +1,105 @@
+.intensity {
+  	height: 148px;
+  	position: relative;
+  	border-radius: 5px;
+  	border: 1px dashed var(--color-blueviolet);
+  	box-sizing: border-box;
+  	width: 100%;
+  	overflow: hidden;
+  	display: flex;
+  	flex-direction: column;
+  	align-items: flex-start;
+  	gap: var(--gap-10);
+  	text-align: center;
+  	font-size: var(--fs-20);
+  	color: var(--color-seagreen);
+  	font-family: var(--font-inter);
+}
+.property1low {
+  	align-self: stretch;
+  	flex: 1;
+  	display: flex;
+  	align-items: center;
+}
+.frame {
+  	border-radius: var(--br-30);
+  	background-color: var(--color-aquamarine);
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-10);
+  	gap: var(--gap-10);
+}
+.checkCircleIcon {
+  	height: var(--height-20);
+  	width: var(--width-20);
+  	position: relative;
+}
+.lowRisk {
+  	position: relative;
+  	font-weight: 500;
+}
+.property1moderate {
+  	align-self: stretch;
+  	flex: 1;
+  	display: flex;
+  	align-items: center;
+  	color: var(--color-saddlebrown);
+}
+.frame2 {
+  	border-radius: var(--br-30);
+  	background-color: var(--color-goldenrod);
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-10);
+  	gap: var(--gap-10);
+}
+.alertCircle {
+  	height: var(--height-20);
+  	width: var(--width-20);
+  	position: relative;
+  	overflow: hidden;
+  	flex-shrink: 0;
+}
+.icon {
+  	position: absolute;
+  	height: 83.5%;
+  	width: 83.5%;
+  	top: 8.33%;
+  	right: 8.17%;
+  	bottom: 8.17%;
+  	left: 8.33%;
+  	max-width: 100%;
+  	overflow: hidden;
+  	max-height: 100%;
+}
+.property1high {
+  	align-self: stretch;
+  	flex: 1;
+  	display: flex;
+  	align-items: center;
+  	color: var(--color-mistyrose);
+}
+.frame3 {
+  	border-radius: var(--br-30);
+  	background-color: var(--color-red);
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	padding: var(--padding-10);
+  	gap: var(--gap-10);
+}
+.icon2 {
+  	position: absolute;
+  	height: 75.5%;
+  	width: 87%;
+  	top: 12.07%;
+  	right: 6.53%;
+  	bottom: 12.43%;
+  	left: 6.47%;
+  	max-width: 100%;
+  	overflow: hidden;
+  	max-height: 100%;
+}
+

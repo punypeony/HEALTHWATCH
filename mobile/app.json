@@ -34,7 +34,11 @@
           "barcodeScannerEnabled": true
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      ["expo-image-picker", {
+        "photosPermission": "Choose a JPEG profile photo for your dependent.",
+        "microphonePermission": false
+      }]
     ],
     "web": {
       "favicon": "./assets/favicon.png"

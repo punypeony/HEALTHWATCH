@@ -1,9 +1,11 @@
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text } from "react-native";
 
 import { colors } from "../theme/colors";
 import { spacing } from "../theme/spacing";
 import { typography } from "../theme/typography";
 import { Button } from "./Button";
+import { Screen } from "./Screen";
+import { Card } from "./Card";
 
 type ScreenStatusProps = {
   title: string;
@@ -21,20 +23,20 @@ export function ScreenStatus({
   onAction,
 }: ScreenStatusProps) {
   return (
-    <View style={styles.container}>
+    <Screen contentContainerStyle={styles.container}><Card>
       <Text style={typography.section}>{title}</Text>
       {loading ? <ActivityIndicator color={colors.teal} /> : null}
       <Text style={typography.body}>{message}</Text>
       {actionLabel && onAction ? <Button label={actionLabel} onPress={onAction} /> : null}
-    </View>
+    </Card></Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "center",
-    backgroundColor: colors.white,
+    backgroundColor: "transparent",
     padding: spacing.lg,
     gap: spacing.md,
   },

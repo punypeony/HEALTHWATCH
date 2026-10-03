@@ -1,0 +1,44 @@
+.header {
+  	width: 100%;
+  	position: relative;
+  	display: flex;
+  	align-items: flex-start;
+  	text-align: center;
+  	font-size: 48px;
+  	color: var(--color-black);
+  	font-family: var(--font-inter);
+}
+.header2 {
+  	flex: 1;
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+}
+.frame {
+  	flex: 1;
+  	background: linear-gradient(0deg, rgba(0, 172, 243, 0), #00acf3);
+  	display: flex;
+  	align-items: center;
+  	max-width: 100%;
+}
+.frame2 {
+  	align-self: stretch;
+  	flex: 1;
+  	display: flex;
+  	align-items: center;
+  	padding: 100px 10px;
+}
+.frame3 {
+  	height: 20px;
+  	flex: 1;
+  	display: flex;
+  	align-items: center;
+  	padding: 0px 0px 0px 30px;
+  	box-sizing: border-box;
+}
+.healthwatch {
+  	position: relative;
+  	letter-spacing: 2px;
+  	flex-shrink: 0;
+}
+

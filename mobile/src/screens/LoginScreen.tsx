@@ -1,16 +1,13 @@
+import { AuthSwitch } from "../components/AuthSwitch";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Text } from "react-native";
+import { AuthLayout, authText } from "../components/AuthLayout";
 
 import { useSession } from "../auth/SessionContext";
 import { Button } from "../components/Button";
 import { Field } from "../components/Field";
-import { colors } from "../theme/colors";
-import { spacing } from "../theme/spacing";
-import { typography } from "../theme/typography";
 import type { AuthStackParamList } from "../types";
-import { getApiBaseUrl } from "../utils/apiBaseUrl";
 import { errorMessage } from "../utils/errors";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
@@ -41,58 +38,29 @@ export function LoginScreen({ navigation, route }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.fill}>
-      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-        automaticallyAdjustKeyboardInsets
-      >
-        <Text style={styles.api}>API: {getApiBaseUrl()}</Text>
-        <Text style={typography.section}>Log in</Text>
+    <AuthLayout title="Welcome back, you’ve been missed!"
+      footer={<AuthSwitch onPress={() => navigation.navigate("Register")} />}>
         {route.params?.registeredEmail ? (
-          <Text style={typography.body}>
+          <Text style={authText.note}>
             Account created for {route.params.registeredEmail}. Log in to continue.
           </Text>
         ) : null}
-        <Field
-          label="Email"
+        <Field tone="light" hideLabel
+          label="Email" placeholder="Enter your email"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
         />
-        <Field
-          label="Password"
+        <Field tone="light" hideLabel
+          label="Password" placeholder="Enter your password"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           autoCapitalize="none"
         />
-        {formError ? <Text style={typography.error}>{formError}</Text> : null}
-        <Button label="Login" onPress={() => void onSubmit()} pending={submitting} />
-        <Button
-          label="Don't have an account yet? Sign up."
-          variant="secondary"
-          onPress={() => navigation.navigate("Register")}
-        />
-      </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        {formError ? <Text style={authText.error}>{formError}</Text> : null}
+        <Button variant="auth" label="Login" onPress={() => void onSubmit()} pending={submitting} />
+    </AuthLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  fill: {
-    flex: 1,
-    backgroundColor: colors.white,
-  },
-  scroll: {
-    flexGrow: 1,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  api: {
-    ...typography.muted,
-  },
-});

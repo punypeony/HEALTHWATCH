@@ -11,9 +11,9 @@ export const spacing = {
 };
 
 export const radius = {
-  pill: 4,
-  sheet: 0,
-  card: 4,
-  tab: 4,
-  avatar: 4,
+  pill: 999,
+  sheet: 28,
+  card: 20,
+  tab: 12,
+  avatar: 999,
 };
