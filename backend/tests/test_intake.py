@@ -1,6 +1,6 @@
 """Daily intake counts only meals marked eaten, scaled by grams eaten."""
 from datetime import datetime, timedelta
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -181,13 +181,17 @@ def test_condition_limits_and_missing_values(client, headers, dependent, db_sess
     assert set(report['nutrients']) == {
         'calories', 'sodium', 'sugar', 'carbohydrates', 'saturated_fat', 'protein'}
     assert report['nutrients']['carbohydrates']['consumed'] == 20
-    assert report['nutrients']['carbohydrates']['limit'] == pytest.approx(
-        float(daily_carbohydrate_g(profile.daily_calories)))
+    carb_limit = daily_carbohydrate_g(profile.daily_calories)
+    assert report['nutrients']['carbohydrates']['limit'] == float(
+        carb_limit.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
     assert report['nutrients']['saturated_fat']['consumed'] == 2.5
-    assert report['nutrients']['saturated_fat']['limit'] == pytest.approx(
-        float(daily_saturated_fat_g(profile.daily_calories)))
+    fat_limit = daily_saturated_fat_g(profile.daily_calories)
+    assert report['nutrients']['saturated_fat']['limit'] == float(
+        fat_limit.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
     assert report['nutrients']['protein']['consumed'] == 10
-    assert report['nutrients']['protein']['limit'] == pytest.approx(float(daily_protein_g(dependent.weight_kg)))
+    protein_limit = daily_protein_g(dependent.weight_kg)
+    assert report['nutrients']['protein']['limit'] == float(
+        protein_limit.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
     assert 'remaining' not in report['nutrients']['protein']
     assert 'fat' not in report['nutrients'] and 'fiber' not in report['nutrients']
 

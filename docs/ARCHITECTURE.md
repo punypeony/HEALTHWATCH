@@ -4,7 +4,7 @@ This describes the code in the repository. There is no chatbot, recommendation e
 
 ## Runtime pieces
 
-The phone app is Expo, React Native, and TypeScript. Navigation is React Navigation with one stack for login and register, then a stack for the dependent list, add and edit, and one dependent. That dependent screen uses a floating pill: Home, Overview, a raised Scan button, Intake, and Alerts. Home returns to the dependents list. Overview opens the History route. The header shows Health in `#02542D` and Watch in `#00ACF3`. A profile icon on that header shows the caregiver name and Log out.
+The phone app is Expo, React Native, and TypeScript. Navigation is React Navigation with one stack for login and register, then a stack for the dependent list, add and edit, and one dependent. That dependent screen uses a floating pill: Home, Overview, a raised Scan button, Intake, and Alerts. Home returns to the dependents list. Overview opens the weekly summary. A button on that screen opens History. The header shows Health in `#02542D` and Watch in `#00ACF3`. A profile icon on that header shows the caregiver name and Log out.
 
 The phone calls FastAPI over HTTP. `mobile/src/api.ts` attaches `Authorization: Bearer <token>` from device storage (`expo-secure-store` on iOS and Android, `localStorage` on web). The API base URL is `EXPO_PUBLIC_API_URL`, or `http://10.0.2.2:8000` on Android emulators, otherwise `http://127.0.0.1:8000`.
 
