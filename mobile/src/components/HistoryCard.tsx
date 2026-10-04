@@ -3,15 +3,30 @@ import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import type { MealLog } from "../types";
 import { colors } from "../theme/colors";
 import { typography } from "../theme/typography";
-import { formatWhen, nutritionBasis, twoDecimals } from "../utils/format";
+import { formatScanTime, nutritionBasis, twoDecimals } from "../utils/format";
 import { Card } from "./Card";
 import { DesignIcon } from "./DesignIcon";
 
 export function HistoryCard({ meal, onDelete }: { meal: MealLog; onDelete: () => void }) {
   const [photoFailed, setPhotoFailed] = useState(false);
   const color = meal.risk_label === "safe" ? "#009951" : meal.risk_label === "warning" ? "#975102" : "#C00F0C";
-  const amount = (value: number, unit: string) => meal.grams_eaten != null && meal.grams_eaten > 0
-    ? `${twoDecimals(value * meal.grams_eaten / 100)} ${unit} eaten` : `${twoDecimals(value)} ${unit}`;
+  const grams = meal.grams_eaten ?? 0;
+  const eaten = grams > 0;
+  const shown = (value: number) => twoDecimals(eaten ? value * grams / 100 : value);
+  const nutrients = [
+    { key: "calories", text: `Calories ${shown(meal.calories)} kcal`, color: colors.calorie },
+    { key: "sodium", text: `Sodium ${shown(meal.sodium_mg)} mg`, color: colors.sodium },
+    { key: "sugar", text: `Sugar ${shown(meal.sugar_g)} g`, color: colors.sugar },
+  ];
+  if (meal.carbohydrate_g != null) {
+    nutrients.push({ key: "carbohydrate", text: `Carbohydrate ${shown(meal.carbohydrate_g)} g`, color: "#245B85" });
+  }
+  if (meal.saturated_fat_g != null) {
+    nutrients.push({ key: "saturatedFat", text: `Saturated fat ${shown(meal.saturated_fat_g)} g`, color: colors.saturatedFat });
+  }
+  if (meal.protein_g != null) {
+    nutrients.push({ key: "protein", text: `Protein ${shown(meal.protein_g)} g`, color: "#42652A" });
+  }
   return (
     <Card style={[styles.card, { backgroundColor: colors[meal.risk_label], borderColor: color }]}>
       <View style={styles.row}>
@@ -25,12 +40,24 @@ export function HistoryCard({ meal, onDelete }: { meal: MealLog; onDelete: () =>
         </Pressable>
       </View>
       {meal.image_url && !photoFailed ? <Image source={{ uri: meal.image_url }} onError={() => setPhotoFailed(true)} accessibilityLabel="Product photo" style={styles.photo} /> : null}
+      {eaten ? (
+        <View style={styles.eaten}>
+          <Text style={styles.eatenText}>Eaten · {twoDecimals(grams)} g</Text>
+        </View>
+      ) : null}
       <View style={styles.basis}>
         <Text style={styles.basisText}>{nutritionBasis(meal.barcode)}</Text>
       </View>
-      <Text style={typography.body}>Sodium {amount(meal.sodium_mg, "mg")} · Calories {amount(meal.calories, "kcal")} · Sugar {amount(meal.sugar_g, "g")}</Text>
+      <Text style={typography.body}>
+        {nutrients.map((nutrient, index) => (
+          <Text key={nutrient.key}>
+            {index > 0 ? " · " : ""}
+            <Text style={{ color: nutrient.color }}>{nutrient.text}</Text>
+          </Text>
+        ))}
+      </Text>
       {meal.risk_reasons.map((reason, index) => <Text key={index} style={typography.body}>{reason}</Text>)}
-      <Text style={typography.body}>{formatWhen(meal.created_at)}</Text>
+      <Text style={[typography.muted, styles.when]}>{formatScanTime(meal.created_at)}</Text>
     </Card>
   );
 }
@@ -56,4 +83,20 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontWeight: "700",
   },
+  eaten: {
+    alignSelf: "flex-start",
+    backgroundColor: "#FFFFFF",
+    borderColor: "#027A48",
+    borderWidth: 1.5,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  eatenText: {
+    color: "#02542D",
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: "700",
+  },
+  when: { marginTop: 8 },
 });

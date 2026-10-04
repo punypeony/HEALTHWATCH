@@ -245,6 +245,28 @@ def test_history_scales_eaten_grams_and_keeps_uneaten_per_100g(client, headers, 
     body = client.get(f'/dependents/{dependent.id}/meals', headers=headers).json()[0]
     assert body['calories'] == 400 and body['sodium_mg'] == 200 and body['sugar_g'] == 10
     assert body['grams_eaten'] is None
+    assert 'carbohydrate_g' not in body and 'saturated_fat_g' not in body and 'protein_g' not in body
+
+
+def test_history_shows_condition_nutrients_from_the_cached_product(client, headers, dependent, db_session):
+    dependent.dietary_profile.conditions = ['diabetic', 'high cholesterol', 'kidney disease']
+    product = ScannedProduct(
+        barcode='hist-conditions', name='Food', calories=400, sodium_mg=200, sugar_g=10,
+        raw_response={'product': {'nutriments': {
+            'carbohydrates_100g': 20, 'saturated-fat_100g': 3, 'proteins_100g': 8, 'fiber_100g': 4,
+        }}},
+    )
+    db_session.add(MealLog(dependent_id=dependent.id, product=product, risk_label='safe', risk_reasons=['ok']))
+    db_session.commit()
+    body = client.get(f'/dependents/{dependent.id}/meals', headers=headers).json()[0]
+    assert body['carbohydrate_g'] == 20
+    assert body['saturated_fat_g'] == 3
+    assert body['protein_g'] == 8
+    assert 'fiber_g' not in body
+    dependent.dietary_profile.conditions = ['hypertension']
+    db_session.commit()
+    plain = client.get(f'/dependents/{dependent.id}/meals', headers=headers).json()[0]
+    assert 'carbohydrate_g' not in plain and 'saturated_fat_g' not in plain and 'protein_g' not in plain
 
 
 def test_serving_prefill_rejects_milliliters():

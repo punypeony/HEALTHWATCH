@@ -81,6 +81,9 @@ export type MealLog = {
   sugar_g: number;
   image_url?: string | null;
   grams_eaten?: number | null;
+  carbohydrate_g?: number | null;
+  saturated_fat_g?: number | null;
+  protein_g?: number | null;
 };
 
 export type Alert = {

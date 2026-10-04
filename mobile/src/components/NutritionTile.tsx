@@ -15,14 +15,14 @@ const tones = {
 };
 
 /** Dependent and IntakeLoader share the exported bordered nutrient tiles. */
-export function NutritionTile({ label, value, tone, compact = false, children }: PropsWithChildren<{
-  label: string; value: string; tone: NutrientTone; compact?: boolean;
+export function NutritionTile({ label, value, tone, compact = false, colorValue = false, children }: PropsWithChildren<{
+  label: string; value: string; tone: NutrientTone; compact?: boolean; colorValue?: boolean;
 }>) {
   const palette = tones[tone];
   return (
     <View style={[styles.tile, palette, compact && styles.compact]}>
       <Text style={[typography.label, { color: palette.color }, compact && styles.small]}>{label}</Text>
-      <Text style={[typography.body, compact && styles.small]}>{value}</Text>
+      <Text style={[typography.body, compact && styles.small, colorValue && { color: palette.color }]}>{value}</Text>
       {children}
     </View>
   );

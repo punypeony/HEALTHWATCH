@@ -221,6 +221,30 @@ def require_protein_per_100g(raw_response) -> Decimal:
     return _nutrient_grams(raw_response, 'proteins_100g', 'Protein')
 
 
+def history_condition_nutrients(raw_response, conditions) -> dict[str, float]:
+    """Per-100 g grams for a history card, based on the current profile.
+
+    A missing, invalid, negative, or zero value is left out. It is not stored as zero.
+    """
+    checks = (
+        ('diabetic', 'carbohydrate_g', carbohydrate_per_100g),
+        ('high cholesterol', 'saturated_fat_g', saturated_fat_per_100g),
+        ('kidney disease', 'protein_g', require_protein_per_100g),
+    )
+    found = {}
+    for condition, field, reader in checks:
+        if not has_condition(conditions or [], condition):
+            continue
+        try:
+            grams = reader(raw_response)
+        except ApiError:
+            continue
+        if grams <= 0:
+            continue
+        found[field] = float(grams)
+    return found
+
+
 def protein_percentage(raw_response, weight_kg) -> float:
     """Protein per 100 g divided by the 1.3 g/kg adult ceiling."""
     return float(require_protein_per_100g(raw_response) / daily_protein_g(weight_kg))

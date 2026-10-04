@@ -642,3 +642,23 @@ def test_condition_nutrients_missing_from_dishes_are_not_invented(client, header
     assert kidney.status_code == 422
     assert kidney.json()['error']['code'] == 'PRODUCT_DATA_INVALID'
     assert db_session.scalar(select(func.count()).select_from(MealLog)) == 0
+
+
+def test_history_condition_nutrients_follow_the_current_profile():
+    raw = {'product': {'nutriments': {
+        'carbohydrates_100g': 20,
+        'saturated-fat_100g': 3,
+        'proteins_100g': 8,
+        'fiber_100g': 9,
+    }}}
+    assert scan.history_condition_nutrients(raw, []) == {}
+    assert scan.history_condition_nutrients(raw, ['hypertension']) == {}
+    assert scan.history_condition_nutrients(raw, ['diabetic']) == {'carbohydrate_g': 20.0}
+    assert scan.history_condition_nutrients(raw, ['Diabetic', 'high cholesterol', 'kidney disease']) == {
+        'carbohydrate_g': 20.0, 'saturated_fat_g': 3.0, 'protein_g': 8.0,
+    }
+    unusable = {'product': {'nutriments': {
+        'carbohydrates_100g': 0, 'saturated-fat_100g': -1, 'proteins_100g': 'no',
+    }}}
+    assert scan.history_condition_nutrients(
+        unusable, ['diabetic', 'high cholesterol', 'kidney disease']) == {}

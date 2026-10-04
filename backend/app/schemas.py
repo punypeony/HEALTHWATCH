@@ -117,6 +117,9 @@ class MealOutput(BaseModel):
     sugar_g: float
     image_url: str | None = None
     grams_eaten: float | None = None
+    carbohydrate_g: float | None = None
+    saturated_fat_g: float | None = None
+    protein_g: float | None = None
 
     @model_validator(mode='before')
     @classmethod
@@ -124,7 +127,11 @@ class MealOutput(BaseModel):
         product = getattr(value, 'product', None)
         if product is None or isinstance(value, dict):
             return value
-        return {
+        from app.scan import history_condition_nutrients
+        dependent = getattr(value, 'dependent', None)
+        profile = getattr(dependent, 'dietary_profile', None) if dependent is not None else None
+        conditions = profile.conditions if profile is not None else ()
+        payload = {
             'id': value.id,
             'dependent_id': value.dependent_id,
             'scanned_product_id': value.scanned_product_id,
@@ -139,6 +146,16 @@ class MealOutput(BaseModel):
             'image_url': product_image_url(product.raw_response),
             'grams_eaten': value.grams_eaten,
         }
+        payload.update(history_condition_nutrients(product.raw_response, conditions))
+        return payload
+
+    @model_serializer(mode='wrap')
+    def _omit_unused_grams(self, handler):
+        data = handler(self)
+        for key in ('carbohydrate_g', 'saturated_fat_g', 'protein_g'):
+            if not data.get(key):
+                data.pop(key, None)
+        return data
 
 
 class AlertOutput(BaseModel):
