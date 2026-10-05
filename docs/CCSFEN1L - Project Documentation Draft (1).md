@@ -78,7 +78,7 @@ To design and develop a mobile application that helps caregivers manage multiple
 **4.1 Scope**
 
 * The system will allow a single caregiver account to register and manage multiple dependents, each with a separate profile and scan history. Registration collects a name, email, and password, and asks the caregiver to confirm the password. There is no separate username. The header can log out.  
-* The system will automatically calculate daily nutrition targets for sodium, sugar, and calories. The 2,000 mg sodium baseline and the free-sugar baseline of 10% of energy follow World Health Organization (2012, 2015) guidance. Age-band factors, the 30% hypertension sodium reduction, and the 50% diabetic sugar reduction are the course formulas in the target code.  
+* The system will automatically calculate daily nutrition targets for sodium, sugar, and calories. The 2,000 mg sodium baseline and the free-sugar baseline of 10% of energy follow World Health Organization (2012, 2015) guidance. Child calories use 0.8 from NHLBI Table 5-1 (1,600 / 2,000). Child sodium uses that same ratio, following the WHO sodium fact sheet. Elderly calories use the NIA inactive older-adult values against the NHLBI young-adult upper values. Elderly sodium uses 0.75 so the 2,000 mg baseline becomes the American Heart Association 1,500 mg goal. The child and elderly factors are course ratios taken from those reference values. They are not published multipliers for the Mifflin-St Jeor equation, and those organizations did not set this app's age cutoffs. Hypertension still reduces sodium by 30%, and a diabetic condition still reduces sugar by 50%.  
 * The system will retrieve nutrition data for scanned products from the Open Food Facts database, an open and freely accessible source of food product information.  
 * The system will classify each scanned product as safe, warning, or danger using a locally trained decision tree model, and will explain the classification in plain language. The scan result and alert badges show those labels as Low Risk, Moderate Risk, and High Risk.  
 * The system will maintain a history of scanned meals, generate alerts for warning and danger items, and produce a weekly summary from those scans. The caregiver can delete one scan or clear that dependent's history. History shows a product photo when Open Food Facts provided one.  
@@ -90,7 +90,7 @@ To design and develop a mobile application that helps caregivers manage multiple
 **4.2 Limitations**
 
 * The decision tree still classifies from sodium, sugar, calories, an allergy flag, a condition-conflict flag, and age band. Carbohydrate, saturated fat, and protein are hard rules for the matching condition. They are not tree features, and the saved model was not retrained.  
-* Saturated fat is read only for high cholesterol, carbohydrate only for diabetic, and protein only for kidney disease. A missing value fails the scan only when that box is checked. Fiber is not a danger rule. The protein danger rule applies at age 12 or older and uses 1.3 g per kg of body weight per day. It does not apply to children, and there is no dialysis flag or disease stage.  
+* Saturated fat is read only for high cholesterol, carbohydrate only for diabetic, and protein only for kidney disease. A missing value fails the scan only when that box is checked. Fiber is not a danger rule. The protein danger rule applies at age 12 or older and uses 1.3 g per kg of body weight per day, the KDIGO 2024 Practice Point 3.3.1.1 adult high-intake ceiling, not a child restriction; saturated fat under 10% of energy follows the WHO healthy-diet fact sheet, and carbohydrate uses the National Academies acceptable macronutrient range at the upper end, 65% of energy. There is no dialysis flag or disease stage.  
 * The only typed dishes are spaghetti and adobo. Any other name is not found. Adobo has no saturated-fat value, and neither dish has carbohydrate or protein, so those condition checks reject the dish instead of storing zero.  
 * The system does not use a Food Recognition System or a camera model to identify a plated meal. A barcode still has to be in Open Food Facts, or in the offline demo file when demo mode is on.  
 * The system is a support tool, not a medical device. It does not provide medical diagnoses and is not a substitute for professional advice from a doctor or registered dietitian.  
@@ -158,7 +158,7 @@ The primary objective is to identify who uses the system, what a scan must do, w
 | ----- | ----- |
 | Course project specification | Caregiver as the only actor; JWT ownership; PostgreSQL through SQLAlchemy; local Decision Tree; standard error JSON; scan steps (validate, fetch, percentages, allergy, conditions, predict, meal log, alert); demo mode; computed daily targets that the client cannot post. |
 | Academic and guideline literature already cited in Sections 1–2 | Caregiving context (Cruz et al., 2019; Lawson et al., 2021); dietary mHealth support (Fakih El Khoury et al., 2019; Spinean et al., 2025); WHO sodium and free-sugar baselines (World Health Organization, 2012, 2015). |
-| Named nutrition references required by the specification | Mifflin-St Jeor calorie equation and sedentary multiplier 1.2; hypertension sodium reduction of 30%; diabetic sugar reduction of 50%; WHO saturated-fat share (10% of energy / 9); AMDR carbohydrate upper share (65% of energy / 4); KDIGO 2024 protein ceiling of 1.3 g per kg per day for adults, with no protein restriction rule for children. |
+| NHLBI Table 5-1; WHO sodium fact sheet; NIA healthy-eating guide; American Heart Association sodium page; WHO healthy-diet fact sheet; National Academies carbohydrate range; KDIGO 2024 | Mifflin-St Jeor calorie equation and sedentary multiplier 1.2; hypertension sodium reduction of 30%; diabetic sugar reduction of 50%; saturated fat at 10% of energy / 9; carbohydrate at 65% of energy / 4; adult protein ceiling of 1.3 g per kg with no protein restriction for children. |
 | Open Food Facts API documentation | Barcode product URL, per-100 g nutriments, structured allergen tags; missing values must not be stored as zero. |
 | FNRI food composition library (two committed rows only) | Spaghetti and adobo per 100 g; adobo saturated fat is missing. |
 | Running codebase, API contract, and technical logs | Implemented routes, schemas, demo barcodes, training dataset and evaluation report, defect log. |
@@ -376,7 +376,7 @@ The general objective in Section 3.1 was achieved within the stated scope: a car
 | ----- | ----- |
 | SO-1. Design individual dependent profiles (age, weight, height, allergies, conditions including diabetes and hypertension) | Achieved. Create and edit forms store those fields. The edit form can delete the dependent. A profile photo stays on the phone. Optional checkboxes also cover high cholesterol and kidney disease. A dependent may be saved with no condition checked. Targets are never entered by the caregiver. |
 | SO-2. Develop barcode scanning that identifies a product and retrieves nutrition | Achieved. Camera scan with permission and cooldown, plus manual barcode entry, call POST /dependents/{id}/scan. Live lookup uses Open Food Facts; demo mode uses demo\_products.json. Typed dishes are a separate local table, not a substitute for scanning. |
-| SO-3. Automatically compute daily sodium, sugar, and calorie targets from established guidance, reduced when conditions require it | Achieved. Mifflin-St Jeor plus a named activity multiplier, child and elderly factors, 2000 mg sodium baseline with a 30% hypertension reduction, and free sugar as 10% of calories / 4 with a 50% diabetic reduction. Additional hard limits for carbohydrate, saturated fat, and protein apply only when those conditions are recorded. |
+| SO-3. Automatically compute daily sodium, sugar, and calorie targets from established guidance, reduced when conditions require it | Achieved. Mifflin-St Jeor plus a named activity multiplier, a 2000 mg sodium baseline with a 30% hypertension reduction, and free sugar as 10% of calories / 4 with a 50% diabetic reduction. Child ratios follow NHLBI Table 5-1 and the WHO sodium fact sheet. Elderly calorie ratios follow the NIA inactive older-adult values against the NHLBI young-adult upper values, and the elderly sodium factor follows the American Heart Association 1,500 mg goal. Saturated fat, carbohydrate, and protein follow the WHO healthy-diet fact sheet, the National Academies carbohydrate range, and KDIGO 2024, and apply only when those conditions are recorded. The child and elderly factors are course ratios taken from those reference values. They are not published multipliers for the Mifflin-St Jeor equation, and those organizations did not set this app's age cutoffs. |
 | SO-4. Integrate Open Food Facts, PostgreSQL, and a locally trained Decision Tree | Achieved. Successful live barcodes are cached in scanned\_products. The tree is a committed DecisionTreeClassifier loaded with joblib inside FastAPI. Allergy match and condition conflict above half of the matching target force danger before the tree. |
 | SO-5. Evaluate functionality and classification performance for low risk, moderate risk, and high risk | Achieved as a course evaluation, not as clinical validation. Backend business logic is covered by pytest against PostgreSQL. The mobile project is typechecked with npx tsc \--noEmit. Holdout accuracy on 1000 synthetic test rows is 92.90%. The report classes are safe, warning, and danger (precision/recall 0.94/0.98, 0.88/0.78, and 0.93/0.90). The result badge shows those as Low Risk, Moderate Risk, and High Risk. Demo barcodes on Demo Hypertension produce the required low risk, moderate risk and high risk path. |
 
@@ -418,17 +418,31 @@ Product limitations that should stay explicit in any future version: barcodes mi
 
 # **15\. REFERENCES**
 
+American Heart Association. (n.d.). *How much sodium should I eat per day?* [https\://www\.heart.org/en/healthy-living/healthy-eating/eat-smart/sodium/how-much-sodium-should-i-eat-per-day](https://www.heart.org/en/healthy-living/healthy-eating/eat-smart/sodium/how-much-sodium-should-i-eat-per-day)
+
 Cruz, G. T., Natividad, J. N., & Saito, Y. (2019). Discussion, conclusions, and recommendations. In G. T. Cruz, C. J. P. Cruz, & Y. Saito (Eds.), *Ageing and health in the Philippines* (pp. 215–226). Economic Research Institute for ASEAN and East Asia. [https\://www\.eria.org/uploads/media/Books/2019-Dec-Ageing-and-Health-Philippines/20-Ageing-and-Health-Philippines-Chapter-14-new.pdf](https://www.eria.org/uploads/media/Books/2019-Dec-Ageing-and-Health-Philippines/20-Ageing-and-Health-Philippines-Chapter-14-new.pdf)
 
 Fakih El Khoury, C., Karavetian, M., Halfens, R. J. G., Crutzen, R., Khoja, L., & Schols, J. M. G. A. (2019). The effects of dietary mobile apps on nutritional outcomes in adults with chronic diseases: A systematic review and meta-analysis. *Journal of the Academy of Nutrition and Dietetics, 119*(4), 626–651. [https\://doi.org/10.1016/j.jand.2018.11.010](https://doi.org/10.1016/j.jand.2018.11.010)
 
+KDIGO. (2024). *KDIGO 2024 CKD guideline* (Practice Point 3.3.1.1). [https\://kdigo.org/wp-content/uploads/2024/03/KDIGO-2024-CKD-Guideline.pdf](https://kdigo.org/wp-content/uploads/2024/03/KDIGO-2024-CKD-Guideline.pdf)
+
 Lawson, S., Mullan, J., Wong, G., Zaman, H., Booth, A., Watson, A., & Maidment, I. (2021). Family carers' experiences of managing older relative's medications: Insights from the MEMORABLE study. *Patient Education and Counseling.* Advance online publication. [https\://doi.org/10.1016/j.pec.2021.12.017](https://doi.org/10.1016/j.pec.2021.12.017)
+
+National Academies. (n.d.). *Dietary Reference Intakes* (Catalog 10490). [https\://nap.nationalacademies.org/catalog/10490](https://nap.nationalacademies.org/catalog/10490)
+
+NHLBI. (n.d.). *Table 5-1*. [https\://www\.nhlbi.nih.gov/sites/default/files/publications/12-7486.pdf](https://www.nhlbi.nih.gov/sites/default/files/publications/12-7486.pdf)
+
+NIA. (2019). *Healthy eating* (2019 update). [https\://order.nia.nih.gov/sites/default/files/2019-10/Healthy-Eating-2019-update-508.pdf](https://order.nia.nih.gov/sites/default/files/2019-10/Healthy-Eating-2019-update-508.pdf)
 
 Spinean, A., Mladin, A., Carniciu, S., Stănescu, A. M. A., & Serafinceanu, C. (2025). Emerging methods for integrative management of chronic diseases: Utilizing mHealth apps for lifestyle interventions. *Nutrients, 17*(9), Article 1506\. [https\://doi.org/10.3390/nu17091506](https://doi.org/10.3390/nu17091506)
 
 World Health Organization. (2012). *Guideline: Sodium intake for adults and children.* World Health Organization. [https\://www\.ncbi.nlm.nih.gov/books/NBK133309/](https://www.ncbi.nlm.nih.gov/books/NBK133309/)
 
 World Health Organization. (2015, March 4). *WHO calls on countries to reduce sugars intake among adults and children* \[Press release\]. [https\://www\.who.int/news/item/04-03-2015-who-calls-on-countries-to-reduce-sugars-intake-among-adults-and-children](https://www.who.int/news/item/04-03-2015-who-calls-on-countries-to-reduce-sugars-intake-among-adults-and-children)
+
+World Health Organization. (n.d.). *Healthy diet*. [https\://www\.who.int/news-room/fact-sheets/detail/healthy-diet](https://www.who.int/news-room/fact-sheets/detail/healthy-diet)
+
+World Health Organization. (n.d.). *Sodium reduction*. [https\://www\.who.int/news-room/fact-sheets/detail/sodium-reduction](https://www.who.int/news-room/fact-sheets/detail/sodium-reduction)
 
 # 
 
@@ -443,7 +457,13 @@ World Health Organization. (2015, March 4). *WHO calls on countries to reduce su
 | Cruz et al. (2019); Lawson et al. (2021) | Caregivers have little formal training and face information gaps | Problem Statement (Section 2\) |
 | Fakih El Khoury et al. (2019); Spinean et al. (2025) | Dietary mobile apps improve nutrition outcomes | Project justification (Section 1\) |
 | WHO (2012, 2015\) | Sodium under 2,000 mg/day; free sugar under 10% of energy | FR-03; daily target formulas |
-| Nutrition references named in the specification | Mifflin-St Jeor, 30% sodium reduction (hypertension), 50% sugar reduction (diabetic), saturated fat and carbohydrate shares, KDIGO 2024 protein ceiling | Condition-specific hard rules |
+| NHLBI Table 5-1 | Child calorie ratio 0.8 from 1,600 / 2,000 | FR-03 |
+| WHO sodium fact sheet | Child sodium uses the same energy ratio | FR-03 |
+| NIA healthy-eating guide | Inactive older-adult calorie values for the elderly calorie ratios | FR-03 |
+| American Heart Association sodium page | 1,500 mg goal; elderly sodium factor 0.75 from the 2,000 mg baseline | FR-03 |
+| WHO healthy-diet fact sheet | Saturated fat under 10% of energy | FR-03; condition-specific hard rules |
+| National Academies carbohydrate range | Carbohydrate at the upper end, 65% of energy | FR-03; condition-specific hard rules |
+| KDIGO 2024 | Adult protein ceiling of 1.3 g per kg; no protein restriction for children | FR-03; condition-specific hard rules |
 | Open Food Facts API documentation | Per-100 g nutriments, allergen tags; missing values must not be stored as zero | FR-04; `PRODUCT_DATA_INVALID` rule |
 | FNRI food composition library | Spaghetti and adobo values; adobo saturated fat missing | FR-10; typed-dish limitation |
 | Running codebase, API contract, technical logs | Implemented routes, demo barcodes, evaluation report, defect log | Confirmation of FR-01 to FR-11 |
